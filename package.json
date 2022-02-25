@@ -1,0 +1,29 @@
+{
+	"name": "toggl-track",
+	"version": "1.0.0",
+	"api_version": "1.0.0",
+	"keywords": [
+		"Timer",
+		"Logging"
+	],
+	"manufacturer": "Toggl",
+	"product": [
+		"Track"
+	],
+	"shortname": "toggl",
+	"description": "Companion module for TogglTrack",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Peter Daniel",
+	"license": "MIT",
+	"homepage": "https://github.com/bitfocus/companion-module-toggl-trackr#readme",
+	"bugs": {
+		"url": "https://github.com/bitfocus/companion-module-toggl-track/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/bitfocus/companion-module-toggl-track.git"
+	}
+}
