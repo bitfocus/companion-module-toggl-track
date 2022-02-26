@@ -15,7 +15,7 @@ function instance(system, id, config) {
 instance.prototype.updateConfig = function (config) {
 	var self = this
 	self.config = config
-	
+
 	self.auth()
 	self.getCurrentTimer()
 	self.actions()
@@ -28,7 +28,7 @@ instance.prototype.init = function () {
 	log = self.log
 
 	self.currentTimer = null
-	
+
 	self.init_presets()
 	self.auth()
 	self.getCurrentTimer()
@@ -37,14 +37,13 @@ instance.prototype.init = function () {
 
 instance.prototype.auth = function () {
 	var self = this
-	
+
 	auth = Buffer.from(self.config.apiToken + ':' + 'api_token').toString('base64')
 	self.header = []
 	self.header['Content-Type'] = 'application/json'
 	self.header['Authorization'] = 'Basic ' + auth
-	
+
 	console.log(self.header)
-	
 }
 
 instance.prototype.config_fields = function () {
@@ -76,7 +75,7 @@ instance.prototype.destroy = function () {
 instance.prototype.init_presets = function () {
 	var self = this
 	var presets = []
-	
+
 	presets.push({
 		category: 'Timer',
 		label: 'Start',
@@ -92,11 +91,11 @@ instance.prototype.init_presets = function () {
 				action: 'startNewTimer',
 				options: {
 					description: '',
-				}
+				},
 			},
 		],
 	})
-	
+
 	presets.push({
 		category: 'Timer',
 		label: 'Stop',
@@ -160,12 +159,12 @@ instance.prototype.action = function (action) {
 		case 'stopCurrentTimer': {
 			var restCmd = 'rest_put'
 			console.log(self.currentTimer)
-			
+
 			if (self.currentTimer != null && self.currentTimer != undefined) {
 				var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + self.currentTimer + '/stop'
 				console.log(cmd)
 			} else {
-				self.log('warn','No running timer to stop or running timer ID unknown')
+				self.log('warn', 'No running timer to stop or running timer ID unknown')
 				return
 			}
 			break
@@ -180,72 +179,81 @@ instance.prototype.action = function (action) {
 			break
 	}
 
-	self.system.emit(restCmd, cmd, body, function (err, result) {
-		
-		if (err !== null) {
-			console.log(result.statusCode)
-			console.log('HTTP Request failed (' + result.error.code + ')')
-			self.status(self.STATUS_ERROR, result.error.code);
-		} else {
-			console.log(typeof(result.data))
-			console.log(result.statusCode)
-			if (!self.auth_error) {
-				self.status(self.STATUS_OK)
-				if (typeof result.data === 'object') {
-					if (typeof result.data.data === 'object') {
-						self.interpretData(result.data.data)
+	self.system.emit(
+		restCmd,
+		cmd,
+		body,
+		function (err, result) {
+			if (err !== null) {
+				console.log(result.statusCode)
+				console.log('HTTP Request failed (' + result.error.code + ')')
+				self.status(self.STATUS_ERROR, result.error.code)
+			} else {
+				console.log(typeof result.data)
+				console.log(result.statusCode)
+				if (!self.auth_error) {
+					self.status(self.STATUS_OK)
+					if (typeof result.data === 'object') {
+						if (typeof result.data.data === 'object') {
+							self.interpretData(result.data.data)
+						}
+					} else {
+						self.currentTimer = null
+						console.log(result.data)
+						self.log('debug', result.data)
 					}
-				} else {
-					self.currentTimer = null
-					console.log(result.data)
-					self.log('debug',result.data)
 				}
 			}
-		}
-	}, self.header)
-	
+		},
+		self.header
+	)
 }
 
 instance.prototype.getCurrentTimer = function () {
 	var self = this
 	var cmd = 'https://api.track.toggl.com/api/v8/time_entries/current'
-	
-	self.system.emit('rest_get', cmd, function (err, result) {
-		if (err !== null) {
-			console.log('HTTP Request failed (' + result.error.code + ')')
-			self.status(self.STATUS_ERROR, result.error.code)
-		} else if (result.response.statusCode == 200) {
-			console.log('status:' + result.response.statusCode)
-			self.status(self.STATUS_OK)
-			if (typeof result.data.data === 'object' && result.data.data != null) {
-				if ('id' in result.data.data) {
-					self.currentTimer = result.data.data.id
-					console.log(self.currentTimer)
-					self.log('debug','Current timer id ' + self.currentTimer)
+
+	self.system.emit(
+		'rest_get',
+		cmd,
+		function (err, result) {
+			if (err !== null) {
+				console.log('HTTP Request failed (' + result.error.code + ')')
+				self.status(self.STATUS_ERROR, result.error.code)
+			} else if (result.response.statusCode == 200) {
+				console.log('status:' + result.response.statusCode)
+				self.status(self.STATUS_OK)
+				if (typeof result.data.data === 'object' && result.data.data != null) {
+					if ('id' in result.data.data) {
+						self.currentTimer = result.data.data.id
+						console.log(self.currentTimer)
+						self.log('debug', 'Current timer id ' + self.currentTimer)
+					}
+				} else {
+					console.log(result.data)
+					self.log('debug', 'No timer running')
+					self.currentTimer = null
 				}
 			} else {
-				console.log(result.data)
-				self.log('debug','No timer running')
+				console.log('error: ' + result.response.statusCode)
+				self.status(self.STATUS_ERROR, result.response.statusCode)
+				self.log('warn', 'Unable to connect to toggl, check your API token is correct')
 				self.currentTimer = null
 			}
-		} else {
-			console.log('error: ' + result.response.statusCode)
-			self.status(self.STATUS_ERROR, result.response.statusCode)
-			self.log('warn','Unable to connect to toggl, check your API token is correct')
-			self.currentTimer = null
-		}
-	}, self.header)
+		},
+		self.header
+	)
 }
 
 instance.prototype.interpretData = function (data) {
-	var self = this;
+	var self = this
 
 	console.log(data)
-	
+
 	if ('id' in data) {
 		console.log(data.id)
 		self.currentTimer = data.id
-		self.log('debug','timer id ' + data.id)
+		self.log('debug', 'timer id ' + data.id)
 	}
 }
 
