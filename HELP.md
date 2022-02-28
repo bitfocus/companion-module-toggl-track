@@ -32,3 +32,6 @@ Presets are available for **Start Timer** and **Stop Timer**. The **Stop Timer**
 
 ### Version 1.0.0
 First release
+
+### Version 1.0.1
+Fix broken link
