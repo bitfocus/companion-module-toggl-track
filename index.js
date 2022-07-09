@@ -145,7 +145,7 @@ instance.prototype.actions = function (system) {
 					id: 'project',
 					default: 0,
 					choices: self.projects,
-				}
+				},
 			],
 		},
 		getCurrentTimer: {
@@ -168,7 +168,12 @@ instance.prototype.action = function (action) {
 			if (opt.project == '0') {
 				var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
 			} else {
-				var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion","pid":"' + opt.project + '"}}'
+				var body =
+					'{"time_entry":{"description":"' +
+					opt.description +
+					'","created_with":"companion","pid":"' +
+					opt.project +
+					'"}}'
 			}
 			console.log(body)
 			break
@@ -294,10 +299,10 @@ instance.prototype.getProjects = function () {
 						for (p = 0; p < result.data.length; p++) {
 							if ('id' in result.data[p]) {
 								self.projects.push({
-									id: result.data[p].id.toString(), 
+									id: result.data[p].id.toString(),
 									label: result.data[p].name,
 								})
-								self.log('debug','Project ' + result.data[p].id + ':' + result.data[p].name)
+								self.log('debug', 'Project ' + result.data[p].id + ':' + result.data[p].name)
 							}
 						}
 						console.log('Projects:')
