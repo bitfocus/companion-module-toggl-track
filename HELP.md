@@ -14,7 +14,7 @@ Paste this token into the config page of this module and click save. If all is w
 
 **Start New Timer** 
 
-Start a new timer running with the description set in the action and store the ID
+Start a new timer running with the description set in the action and store the ID. If a list of projects has been retrieved on startup you can choose a project.
 
 **Get Current Timer**
 
@@ -35,3 +35,6 @@ First release
 
 ### Version 1.0.1
 Fix broken link
+
+### Version 1.0.2
+Allow a project to be specified when starting a new timer button
