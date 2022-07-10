@@ -278,10 +278,6 @@ instance.prototype.getProjects = function () {
 	var self = this
 
 	if (self.workspace !== null) {
-
-		// reset
-		self.projects = []
-
 		var cmd = 'https://api.track.toggl.com/api/v8/workspaces/' + self.workspace + '/projects'
 		self.system.emit(
 			'rest_get',
@@ -295,6 +291,10 @@ instance.prototype.getProjects = function () {
 					// console.log('project request status:' + result.response.statusCode)
 					self.status(self.STATUS_OK)
 					if (typeof result.data === 'object' && result.data !== null) {
+
+						// reset
+						self.projects = []
+
 						for (p = 0; p < result.data.length; p++) {
 							if ('id' in result.data[p]) {
 								self.projects.push({
