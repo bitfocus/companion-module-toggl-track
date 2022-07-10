@@ -291,7 +291,6 @@ instance.prototype.getProjects = function () {
 					// console.log('project request status:' + result.response.statusCode)
 					self.status(self.STATUS_OK)
 					if (typeof result.data === 'object' && result.data !== null) {
-
 						// reset
 						self.projects = []
 
@@ -310,12 +309,12 @@ instance.prototype.getProjects = function () {
 							fb = b.label.toLowerCase()
 
 							if (fa < fb) {
-								return -1;
+								return -1
 							}
 							if (fa > fb) {
-								return 1;
+								return 1
 							}
-							return 0;
+							return 0
 						})
 
 						self.projects.unshift({ id: '0', label: 'None' })
