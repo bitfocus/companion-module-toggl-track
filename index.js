@@ -143,7 +143,7 @@ instance.prototype.actions = function (system) {
 					type: 'dropdown',
 					label: 'Project',
 					id: 'project',
-					default: 0,
+					default: '0',
 					choices: self.projects,
 				},
 			],
@@ -175,16 +175,14 @@ instance.prototype.action = function (action) {
 					opt.project +
 					'"}}'
 			}
-			console.log(body)
+			// console.log(body)
 			break
 		}
 		case 'stopCurrentTimer': {
 			var restCmd = 'rest_put'
-			console.log(self.currentTimer)
-
+			console.log('current timer: ' + self.currentTimer)
 			if (self.currentTimer != null && self.currentTimer != undefined) {
 				var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + self.currentTimer + '/stop'
-				console.log(cmd)
 			} else {
 				self.log('warn', 'No running timer to stop or running timer ID unknown')
 				return
@@ -193,11 +191,6 @@ instance.prototype.action = function (action) {
 		}
 		case 'getCurrentTimer': {
 			self.getCurrentTimer()
-			return
-			break
-		}
-		case 'getProjects': {
-			self.getProjects()
 			return
 			break
 		}
@@ -221,14 +214,15 @@ instance.prototype.action = function (action) {
 				// console.log(result.statusCode)
 				if (!self.auth_error) {
 					self.status(self.STATUS_OK)
-					if (typeof result.data === 'object') {
-						if (typeof result.data.data === 'object') {
-							self.interpretData(result.data.data)
+					if (typeof result.data.data === 'object') {
+						if ('id' in result.data.data) {
+							self.currentTimer = result.data.data.id
+							console.log('timer id: ' + self.currentTimer)
+							self.log('debug', 'timer id ' + self.currentTimer)
+						} else {
+							self.currentTimer = null
+							console.log('no id but found this: ' + result.data)
 						}
-					} else {
-						self.currentTimer = null
-						console.log(result.data)
-						self.log('debug', result.data)
 					}
 				}
 			}
@@ -242,6 +236,9 @@ instance.prototype.getWorkspace = function () {
 	var cmd = 'https://api.track.toggl.com/api/v8/workspaces'
 	// console.log('getWorkspace')
 
+	// reset
+	self.workspace = null
+
 	// get workspace ID
 	self.system.emit(
 		'rest_get',
@@ -254,6 +251,7 @@ instance.prototype.getWorkspace = function () {
 				// console.log('workspace request status:' + result.response.statusCode)
 				self.status(self.STATUS_OK)
 				if (typeof result.data === 'object' && result.data !== null) {
+					console.log('Found ' + result.data.length + ' workspace')
 					// only interested in first workspace
 					if ('id' in result.data[0]) {
 						self.workspace = result.data[0].id
@@ -278,11 +276,12 @@ instance.prototype.getWorkspace = function () {
 
 instance.prototype.getProjects = function () {
 	var self = this
-	// reset
-	self.projects = [{ id: '0', label: 'None' }]
 
 	if (self.workspace !== null) {
-		// console.log('getProjects')
+
+		// reset
+		self.projects = []
+
 		var cmd = 'https://api.track.toggl.com/api/v8/workspaces/' + self.workspace + '/projects'
 		self.system.emit(
 			'rest_get',
@@ -305,6 +304,21 @@ instance.prototype.getProjects = function () {
 								self.log('debug', 'Project ' + result.data[p].id + ':' + result.data[p].name)
 							}
 						}
+
+						self.projects.sort((a, b) => {
+							fa = a.label.toLowerCase()
+							fb = b.label.toLowerCase()
+
+							if (fa < fb) {
+								return -1;
+							}
+							if (fa > fb) {
+								return 1;
+							}
+							return 0;
+						})
+
+						self.projects.unshift({ id: '0', label: 'None' })
 						console.log('Projects:')
 						console.log(self.projects)
 						self.actions()
@@ -326,7 +340,7 @@ instance.prototype.getProjects = function () {
 instance.prototype.getCurrentTimer = function () {
 	var self = this
 	var cmd = 'https://api.track.toggl.com/api/v8/time_entries/current'
-
+	console.log(cmd)
 	self.system.emit(
 		'rest_get',
 		cmd,
@@ -340,11 +354,11 @@ instance.prototype.getCurrentTimer = function () {
 				if (typeof result.data.data === 'object' && result.data.data !== null) {
 					if ('id' in result.data.data) {
 						self.currentTimer = result.data.data.id
-						console.log(self.currentTimer)
+						console.log('current timer: ' + self.currentTimer)
 						self.log('debug', 'Current timer id ' + self.currentTimer)
 					}
 				} else {
-					// console.log(result.data)
+					console.log('getCurrentTimer: No timer running')
 					self.log('debug', 'No timer running')
 					self.currentTimer = null
 				}
@@ -357,18 +371,6 @@ instance.prototype.getCurrentTimer = function () {
 		},
 		self.header
 	)
-}
-
-instance.prototype.interpretData = function (data) {
-	var self = this
-
-	// console.log(data)
-
-	if ('id' in data) {
-		console.log('timer id: ' + data.id)
-		self.currentTimer = data.id
-		self.log('debug', 'timer id ' + data.id)
-	}
 }
 
 instance_skel.extendedBy(instance)
