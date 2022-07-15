@@ -170,34 +170,30 @@ instance.prototype.action = function (action) {
 					opt.project +
 					'"}}'
 			}
-			self.sendCommand('rest', cmd, body).then(
-				result => {
-					console.log('start: ' + JSON.stringify(result, null, 4))
-					if (typeof(result) == 'object' && result.data !== null) {
-						console.log('new timer ' + result.data.id)
-						self.currentTimer = result.data.id
-					} else {
-						console.log('error starting timer')
-					}	
+			self.sendCommand('rest', cmd, body).then((result) => {
+				console.log('start: ' + JSON.stringify(result, null, 4))
+				if (typeof result == 'object' && result.data !== null) {
+					console.log('new timer ' + result.data.id)
+					self.currentTimer = result.data.id
+				} else {
+					console.log('error starting timer')
 				}
-			)
+			})
 			break
 		}
 		case 'stopCurrentTimer': {
 			console.log('stopping timer: ' + self.currentTimer)
 			if (self.currentTimer != null && self.currentTimer != undefined) {
 				var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + self.currentTimer + '/stop'
-				self.sendCommand('rest_put', cmd).then(
-					result => {
-						// console.log('stop: ' + JSON.stringify(result, null, 4))
-						if (typeof(result) == 'object' && result.data !== null) {
-							console.log('stopped ' + result.data.id + ' duration ' + result.data.duration)
-							self.currentTimer = null
-						} else {
-							console.log('error stopping timer')
-						}
+				self.sendCommand('rest_put', cmd).then((result) => {
+					// console.log('stop: ' + JSON.stringify(result, null, 4))
+					if (typeof result == 'object' && result.data !== null) {
+						console.log('stopped ' + result.data.id + ' duration ' + result.data.duration)
+						self.currentTimer = null
+					} else {
+						console.log('error stopping timer')
 					}
-				)
+				})
 			} else {
 				self.log('warn', 'No running timer to stop or running timer ID unknown')
 			}
@@ -222,7 +218,7 @@ instance.prototype.getWorkspace = function () {
 
 	// get workspace ID
 	self.sendCommand('rest_get', cmd).then(
-		result => {
+		(result) => {
 			// console.log('result ' + JSON.stringify(result, null, 4))
 			if (typeof result === 'object' && result !== null) {
 				console.log('Found ' + result.length + ' workspace')
@@ -239,7 +235,7 @@ instance.prototype.getWorkspace = function () {
 				self.log('debug', 'No workspace')
 			}
 		},
-		error => {
+		(error) => {
 			console.log('error ' + error)
 			self.log('debug', 'Error getting workspace')
 		}
@@ -252,12 +248,12 @@ instance.prototype.getProjects = function () {
 	if (self.workspace !== null) {
 		var cmd = 'https://api.track.toggl.com/api/v8/workspaces/' + self.workspace + '/projects'
 		self.sendCommand('rest_get', cmd).then(
-			result => {
+			(result) => {
 				// console.log('result ' + JSON.stringify(result, null, 4))
 				if (typeof result === 'object' && result !== null) {
 					// reset
 					self.projects = []
-	
+
 					for (p = 0; p < result.length; p++) {
 						if ('id' in result[p]) {
 							self.projects.push({
@@ -267,11 +263,11 @@ instance.prototype.getProjects = function () {
 							self.log('debug', 'Project ' + result[p].id + ':' + result[p].name)
 						}
 					}
-	
+
 					self.projects.sort((a, b) => {
 						fa = a.label.toLowerCase()
 						fb = b.label.toLowerCase()
-	
+
 						if (fa < fb) {
 							return -1
 						}
@@ -280,7 +276,7 @@ instance.prototype.getProjects = function () {
 						}
 						return 0
 					})
-	
+
 					self.projects.unshift({ id: '0', label: 'None' })
 					console.log('Projects:')
 					console.log(self.projects)
@@ -290,7 +286,7 @@ instance.prototype.getProjects = function () {
 					self.log('debug', 'No projects')
 				}
 			},
-			error => {
+			(error) => {
 				console.log('error ' + error)
 				self.log('debug', 'Error getting projects')
 			}
@@ -303,7 +299,7 @@ instance.prototype.getCurrentTimer = function () {
 	var cmd = 'https://api.track.toggl.com/api/v8/time_entries/current'
 
 	self.sendCommand('rest_get', cmd).then(
-		result => {
+		(result) => {
 			// console.log('result ' + JSON.stringify(result, null, 4))
 			if (typeof result === 'object' && result.data !== null) {
 				// console.log('result ' + result.data)
@@ -319,7 +315,7 @@ instance.prototype.getCurrentTimer = function () {
 				self.currentTimer = null
 			}
 		},
-		error => {
+		(error) => {
 			console.log('error ' + error)
 			self.log('debug', 'Error getting current timer')
 		}
@@ -329,30 +325,41 @@ instance.prototype.getCurrentTimer = function () {
 instance.prototype.sendCommand = function (mode, command, body = '') {
 	var self = this
 	console.log(mode + ' : ' + command)
-	
+
 	switch (mode) {
 		case 'rest_get': {
 			return new Promise((resolve, reject) => {
-				self.system.emit(mode, command, (err, { data, error, response }) => {
-					if (err) {
-						reject(error)
-						return
-					}
-					resolve(data)
-				}, self.header)
+				self.system.emit(
+					mode,
+					command,
+					(err, { data, error, response }) => {
+						if (err) {
+							reject(error)
+							return
+						}
+						resolve(data)
+					},
+					self.header
+				)
 			})
 			break
 		}
 		case 'rest':
 		case 'rest_put': {
 			return new Promise((resolve, reject) => {
-				self.system.emit(mode, command, body, (err, { data, error, response }) => {
-					if (err) {
-						reject(error)
-						return
-					}
-					resolve(data)
-				}, self.header)
+				self.system.emit(
+					mode,
+					command,
+					body,
+					(err, { data, error, response }) => {
+						if (err) {
+							reject(error)
+							return
+						}
+						resolve(data)
+					},
+					self.header
+				)
 			})
 			break
 		}
