@@ -150,6 +150,9 @@ instance.prototype.actions = function (system) {
 		stopCurrentTimer: {
 			label: 'Stop Current Timer',
 		},
+		refreshProjects: {
+			label: 'Refresh Project List',
+		},
 	})
 }
 
@@ -201,6 +204,10 @@ instance.prototype.action = function (action) {
 		}
 		case 'getCurrentTimer': {
 			self.getCurrentTimer()
+			break
+		}
+		case 'refreshProjects': {
+			self.getWorkspace()
 			break
 		}
 		default:

@@ -24,6 +24,10 @@ Companion only knows the ID of timers it has started, if a timer is started from
 
 Attempt to stop the current timer. This will fail if Companion doesn't know the ID of the currently running timer.
 
+**Refresh Project List**
+
+Retrives the current list of projects from the toggl server. This action runs automatically when Companion starts and when the module is enabled.
+
 ## Presets
 
 Presets are available for **Start Timer** and **Stop Timer**. The **Stop Timer** preset also includes both the **Get Current Timer** and **Stop Current Timer** actions to ensure reliable operation.
@@ -38,3 +42,5 @@ Fix broken link
 
 ### Version 1.0.2
 Allow a project to be specified when starting a new timer button
+
+Add action to refresh project list
