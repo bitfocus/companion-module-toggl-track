@@ -14,7 +14,7 @@ Paste this token into the config page of this module and click save. If all is w
 
 **Start New Timer** 
 
-Start a new timer running with the description set in the action and store the ID. If a list of projects has been retrieved on startup you can choose a project.
+Start a new timer running with the description set in the action and store the ID. If a list of projects has been retrieved on startup you can choose a project. By default a new timer can't be started if one is already running. This behaviour can be changed by ticking the 'Always Start' option in the module configuration.
 
 **Get Current Timer**
 
@@ -30,7 +30,7 @@ Retrives the current list of projects from the toggl server. This action runs au
 
 ## Presets
 
-Presets are available for **Start Timer** and **Stop Timer**. The **Stop Timer** preset also includes both the **Get Current Timer** and **Stop Current Timer** actions to ensure reliable operation.
+Presets are available for **Start Timer** and **Stop Timer**.
 
 ## History
 

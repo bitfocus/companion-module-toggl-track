@@ -18,7 +18,6 @@ instance.prototype.updateConfig = function (config) {
 
 	self.auth()
 	self.getWorkspace()
-	self.getCurrentTimer()
 	self.actions()
 }
 
@@ -28,7 +27,6 @@ instance.prototype.init = function () {
 	debug = self.debug
 	log = self.log
 
-	self.currentTimer = null
 	self.workspace = null
 	self.workspaceName = null
 	self.projects = [{ id: '0', label: 'None' }]
@@ -36,7 +34,10 @@ instance.prototype.init = function () {
 	self.init_presets()
 	self.auth()
 	self.getWorkspace()
-	self.getCurrentTimer()
+	self.getCurrentTimer().then((result) => {
+			self.log('debug', 'Current timer id ' + result)
+		}
+	)
 	self.actions()
 }
 
@@ -68,12 +69,30 @@ instance.prototype.config_fields = function () {
 			width: 12,
 			default: '',
 		},
+		{
+			type: 'checkbox',
+			id: 'alwaysStart',
+			label: 'Enable',
+			width: 1,
+			default: false,
+		},
+		{
+			type: 'text',
+			id: 'alwaysStartTxt',
+			label: 'Always start a new timer even if there is one already running',
+			width: 11,
+		},
+		{
+			type: 'text',
+			id: 'break',
+			label: '',
+			width: 12,
+		},
 	]
 }
 
 instance.prototype.destroy = function () {
 	var self = this
-	self.currentTimer = null
 	debug('destroy', self.id)
 }
 
@@ -162,48 +181,57 @@ instance.prototype.action = function (action) {
 
 	switch (action.action) {
 		case 'startNewTimer': {
-			var cmd = 'https://api.track.toggl.com/api/v8/time_entries/start'
-			if (opt.project == '0') {
-				var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
-			} else {
-				var body =
-					'{"time_entry":{"description":"' +
-					opt.description +
-					'","created_with":"companion","pid":"' +
-					opt.project +
-					'"}}'
-			}
-			self.sendCommand('rest', cmd, body).then((result) => {
-				console.log('start: ' + JSON.stringify(result, null, 4))
-				if (typeof result == 'object' && result.data !== null) {
-					console.log('new timer ' + result.data.id)
-					self.currentTimer = result.data.id
+			self.getCurrentTimer().then((timerId) => {
+				self.log('debug', 'Current timer id ' + timerId)
+				if (timerId === undefined || timerId == null || self.config.alwaysStart == true) {
+					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/start'
+					if (opt.project == '0') {
+						var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
+					} else {
+						var body =
+							'{"time_entry":{"description":"' +
+							opt.description +
+							'","created_with":"companion","pid":"' +
+							opt.project +
+							'"}}'
+					}
+					self.sendCommand('rest', cmd, body).then((result) => {
+						if (typeof result == 'object' && result.data !== null && result.data !== undefined) {
+							self.log('debug','New timer started ' + result.data.id)
+						} else {
+							self.log('warn','Error starting timer')
+						}
+					})
 				} else {
-					console.log('error starting timer')
+					self.log('debug','A timer is already running')
 				}
 			})
 			break
 		}
 		case 'stopCurrentTimer': {
-			console.log('stopping timer: ' + self.currentTimer)
-			if (self.currentTimer != null && self.currentTimer != undefined) {
-				var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + self.currentTimer + '/stop'
-				self.sendCommand('rest_put', cmd).then((result) => {
-					// console.log('stop: ' + JSON.stringify(result, null, 4))
-					if (typeof result == 'object' && result.data !== null) {
-						console.log('stopped ' + result.data.id + ' duration ' + result.data.duration)
-						self.currentTimer = null
+			self.getCurrentTimer().then((timerId) => {
+					self.log('debug', 'Current timer id ' + timerId)
+					if (timerId !== null && timerId !== undefined) {
+						var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + timerId + '/stop'
+						self.sendCommand('rest_put', cmd).then((result) => {
+							if (typeof result == 'object' && result.data !== null && result.data !== undefined) {
+								self.log('debug', 'Stopped ' + result.data.id + ', duration ' + result.data.duration)
+							} else {
+								self.log('warn', 'Error stopping timer')
+							}
+						})
 					} else {
-						console.log('error stopping timer')
+						self.log('warn', 'No running timer to stop or running timer id unknown')
 					}
-				})
-			} else {
-				self.log('warn', 'No running timer to stop or running timer ID unknown')
-			}
+				}
+			)
 			break
 		}
 		case 'getCurrentTimer': {
-			self.getCurrentTimer()
+			self.getCurrentTimer().then((result) => {
+					self.log('debug', 'Current timer id ' + result)
+				}
+			)
 			break
 		}
 		case 'refreshProjects': {
@@ -305,26 +333,27 @@ instance.prototype.getCurrentTimer = function () {
 	var self = this
 	var cmd = 'https://api.track.toggl.com/api/v8/time_entries/current'
 
-	self.sendCommand('rest_get', cmd).then(
-		(result) => {
-			// console.log('result ' + JSON.stringify(result, null, 4))
-			if (typeof result === 'object' && result.data !== null) {
-				// console.log('result ' + result.data)
-				if ('id' in result.data) {
-					self.currentTimer = result.data.id
-					console.log('current timer: ' + self.currentTimer)
-					self.log('debug', 'Current timer id ' + self.currentTimer)
+	return new Promise((resolve, reject) => {
+			self.sendCommand('rest_get', cmd).then(
+				(result) => {
+					if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
+						if ('id' in result.data) {
+							console.log('current timer: ' + result.data.id)
+							resolve(result.data.id)
+						} else {
+							console.log('getCurrentTimer: No timer id found')
+							resolve(null)
+						}
+					} else {
+						console.log('getCurrentTimer: No timer running')
+						resolve(null)
+					}
+				},
+				(error) => {
+					console.log('error ' + error)
+					self.log('debug', 'Error getting current timer')
 				}
-			} else {
-				console.log(result)
-				console.log('getCurrentTimer: No timer running')
-				self.log('debug', 'No timer running')
-				self.currentTimer = null
-			}
-		},
-		(error) => {
-			console.log('error ' + error)
-			self.log('debug', 'Error getting current timer')
+			)
 		}
 	)
 }
@@ -341,9 +370,12 @@ instance.prototype.sendCommand = function (mode, command, body = '') {
 					command,
 					(err, { data, error, response }) => {
 						if (err) {
+							self.status(self.STATUS_ERROR)
+							console.log(error)
 							reject(error)
 							return
 						}
+						self.status(self.STATUS_OK)
 						resolve(data)
 					},
 					self.header
@@ -360,9 +392,12 @@ instance.prototype.sendCommand = function (mode, command, body = '') {
 					body,
 					(err, { data, error, response }) => {
 						if (err) {
+							self.status(self.STATUS_ERROR)
+							console.log(error)
 							reject(error)
 							return
 						}
+						self.status(self.STATUS_OK)
 						resolve(data)
 					},
 					self.header
