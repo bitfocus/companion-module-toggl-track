@@ -34,19 +34,23 @@ instance.prototype.init = function () {
 	self.init_presets()
 	self.auth()
 	self.getWorkspace()
-	self.getCurrentTimer().then((result) => {
-		self.log('debug', 'Current timer id ' + result)
+	self.getCurrentTimer().then((timerId) => {
+		self.log('debug', 'Current timer id ' + timerId)
 	})
 	self.actions()
 }
 
 instance.prototype.auth = function () {
 	var self = this
-
-	auth = Buffer.from(self.config.apiToken + ':' + 'api_token').toString('base64')
 	self.header = []
-	self.header['Content-Type'] = 'application/json'
-	self.header['Authorization'] = 'Basic ' + auth
+	
+	if (self.config.apiToken !== null && self.config.apiToken.length > 0) {
+		auth = Buffer.from(self.config.apiToken + ':' + 'api_token').toString('base64')
+		self.header['Content-Type'] = 'application/json'
+		self.header['Authorization'] = 'Basic ' + auth
+	} else {
+		self.log('warn', 'Please enter your toggl API token')
+	}
 
 	// console.log(self.header)
 }
