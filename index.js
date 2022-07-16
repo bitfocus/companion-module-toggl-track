@@ -43,7 +43,7 @@ instance.prototype.init = function () {
 instance.prototype.auth = function () {
 	var self = this
 	self.header = []
-	
+
 	if (self.config.apiToken !== null && self.config.apiToken.length > 0) {
 		auth = Buffer.from(self.config.apiToken + ':' + 'api_token').toString('base64')
 		self.header['Content-Type'] = 'application/json'
