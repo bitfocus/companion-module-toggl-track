@@ -182,7 +182,7 @@ instance.prototype.action = function (action) {
 		case 'startNewTimer': {
 			self.getCurrentTimer().then((timerId) => {
 				self.log('debug', 'Current timer id ' + timerId)
-				if (timerId === undefined || timerId == null || self.config.alwaysStart == true) {
+				if (timerId === undefined || timerId === null || self.config.alwaysStart === true) {
 					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/start'
 					if (opt.project == '0') {
 						var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
@@ -195,7 +195,7 @@ instance.prototype.action = function (action) {
 							'"}}'
 					}
 					self.sendCommand('rest', cmd, body).then((result) => {
-						if (typeof result == 'object' && result.data !== null && result.data !== undefined) {
+						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 							self.log('debug', 'New timer started ' + result.data.id)
 						} else {
 							self.log('warn', 'Error starting timer')
@@ -213,7 +213,7 @@ instance.prototype.action = function (action) {
 				if (timerId !== null && timerId !== undefined) {
 					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + timerId + '/stop'
 					self.sendCommand('rest_put', cmd).then((result) => {
-						if (typeof result == 'object' && result.data !== null && result.data !== undefined) {
+						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 							self.log('debug', 'Stopped ' + result.data.id + ', duration ' + result.data.duration)
 						} else {
 							self.log('warn', 'Error stopping timer')
@@ -335,14 +335,11 @@ instance.prototype.getCurrentTimer = function () {
 			(result) => {
 				if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 					if ('id' in result.data) {
-						console.log('current timer: ' + result.data.id)
 						resolve(result.data.id)
 					} else {
-						console.log('getCurrentTimer: No timer id found')
 						resolve(null)
 					}
 				} else {
-					console.log('getCurrentTimer: No timer running')
 					resolve(null)
 				}
 			},
