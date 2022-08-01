@@ -119,6 +119,7 @@ instance.prototype.update_variables = function (system) {
 	self.setVariableDefinitions(variables)
 	self.setVariable('timerId', null)
 	self.setVariable('timerDescription', null)
+
 }
 
 instance.prototype.init_presets = function () {
@@ -256,10 +257,10 @@ instance.prototype.action = function (action) {
 			break
 		}
 		case 'getCurrentTimer': {
-			self.getCurrentTimer().then((result) => {
+			self.getCurrentTimer().then((timerId) => {
 				self.log('debug', 'Current timer id ' + timerId.id + ' ' + timerId.description)
-				self.setVariable('timerId', result.id)
-				self.setVariable('timerDescription', result.description)
+				self.setVariable('timerId', timerId.id)
+				self.setVariable('timerDescription', timerId.description)
 			})
 			break
 		}
