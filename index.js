@@ -119,7 +119,6 @@ instance.prototype.update_variables = function (system) {
 	self.setVariableDefinitions(variables)
 	self.setVariable('timerId', null)
 	self.setVariable('timerDescription', null)
-
 }
 
 instance.prototype.init_presets = function () {
