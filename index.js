@@ -36,7 +36,6 @@ instance.prototype.init = function () {
 	self.auth()
 	self.getWorkspace()
 	self.getCurrentTimer().then((timerId) => {
-		self.log('debug', 'Current timer id ' + timerId.id + ' ' + timerId.description)
 		self.setVariable('timerId', timerId.id)
 		self.setVariable('timerDescription', timerId.description)
 	})
@@ -259,7 +258,7 @@ instance.prototype.action = function (action) {
 		}
 		case 'getCurrentTimer': {
 			self.getCurrentTimer().then((result) => {
-				self.log('debug', 'Current timer id ' + result.id)
+				self.log('debug', 'Current timer id ' + timerId.id + ' ' + timerId.description)
 				self.setVariable('timerId', result.id)
 				self.setVariable('timerDescription', result.description)
 			})
