@@ -32,10 +32,13 @@ instance.prototype.init = function () {
 	self.projects = [{ id: '0', label: 'None' }]
 
 	self.init_presets()
+	self.update_variables()
 	self.auth()
 	self.getWorkspace()
 	self.getCurrentTimer().then((timerId) => {
-		self.log('debug', 'Current timer id ' + timerId)
+		self.log('debug', 'Current timer id ' + timerId.id + ' ' + timerId.description)
+		self.setVariable('timerId', timerId.id)
+		self.setVariable('timerDescription', timerId.description)
 	})
 	self.actions()
 }
@@ -97,6 +100,27 @@ instance.prototype.config_fields = function () {
 instance.prototype.destroy = function () {
 	var self = this
 	debug('destroy', self.id)
+}
+
+instance.prototype.update_variables = function (system) {
+	var self = this
+	var variables = []
+
+	variables.push(
+		{
+			label: 'Current Timer Id',
+			name: 'timerId',
+		},
+		{
+			label: 'Current Timer Description',
+			name: 'timerDescription',
+		}
+	)
+
+	self.setVariableDefinitions(variables)
+	self.setVariable('timerId', null)
+	self.setVariable('timerDescription', null)
+
 }
 
 instance.prototype.init_presets = function () {
@@ -185,8 +209,8 @@ instance.prototype.action = function (action) {
 	switch (action.action) {
 		case 'startNewTimer': {
 			self.getCurrentTimer().then((timerId) => {
-				self.log('debug', 'Current timer id ' + timerId)
 				if (timerId === undefined || timerId === null || self.config.alwaysStart === true) {
+					// no timer currently running or we want to restart it
 					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/start'
 					if (opt.project == '0') {
 						var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
@@ -201,24 +225,28 @@ instance.prototype.action = function (action) {
 					self.sendCommand('rest', cmd, body).then((result) => {
 						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 							self.log('debug', 'New timer started ' + result.data.id)
+							self.setVariable('timerId', result.data.id)
+							self.setVariable('timerDescription', result.data.description)
 						} else {
 							self.log('warn', 'Error starting timer')
 						}
 					})
 				} else {
-					self.log('debug', 'A timer is already running')
+					self.log('debug', 'A timer is already running ' + timerId.id)
 				}
 			})
 			break
 		}
 		case 'stopCurrentTimer': {
 			self.getCurrentTimer().then((timerId) => {
-				self.log('debug', 'Current timer id ' + timerId)
-				if (timerId !== null && timerId !== undefined) {
-					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + timerId + '/stop'
+				self.log('debug', 'Current timer id ' + timerId.id)
+				if (timerId.id !== null && timerId.id !== undefined) {
+					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + timerId.id + '/stop'
 					self.sendCommand('rest_put', cmd).then((result) => {
 						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 							self.log('debug', 'Stopped ' + result.data.id + ', duration ' + result.data.duration)
+							self.setVariable('timerId', null)
+							self.setVariable('timerDescription', null)
 						} else {
 							self.log('warn', 'Error stopping timer')
 						}
@@ -231,7 +259,9 @@ instance.prototype.action = function (action) {
 		}
 		case 'getCurrentTimer': {
 			self.getCurrentTimer().then((result) => {
-				self.log('debug', 'Current timer id ' + result)
+				self.log('debug', 'Current timer id ' + result.id)
+				self.setVariable('timerId', result.id)
+				self.setVariable('timerDescription', result.description)
 			})
 			break
 		}
@@ -339,11 +369,17 @@ instance.prototype.getCurrentTimer = function () {
 			(result) => {
 				if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
 					if ('id' in result.data) {
-						resolve(result.data.id)
+						resolve(result.data)
 					} else {
+						self.log('debug', 'Error getting current timer (no id in data)')
+						self.setVariable('timerId', null)
+						self.setVariable('timerDescription', null)
 						resolve(null)
 					}
 				} else {
+					self.log('debug', 'Error getting current timer (no object)')
+					self.setVariable('timerId', null)
+					self.setVariable('timerDescription', null)
 					resolve(null)
 				}
 			},

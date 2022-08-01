@@ -46,3 +46,6 @@ Allow a project to be specified when starting a new timer button
 Add an action to refresh the project list
 
 Add 'Always start' configuration option
+
+### Version 1.0.3
+Add variables for timerId and timerDescription
