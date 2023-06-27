@@ -26,7 +26,7 @@ Attempt to stop the current timer. This will fail if Companion doesn't know the 
 
 **Refresh Project List**
 
-Retrives the current list of projects from the toggl server. This action runs automatically when Companion starts and when the module is enabled.
+Retrieves the current list of projects from the toggl server. This action runs automatically when Companion starts and when the module is enabled.
 
 ## Presets
 
