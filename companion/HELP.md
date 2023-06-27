@@ -50,6 +50,6 @@ Add 'Always start' configuration option
 ### Version 1.0.3
 Add variables for timerId and timerDescription
 
-### Version 2.0
+### Version 2.0.0
 Updated for Companion version 3
 
