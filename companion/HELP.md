@@ -52,4 +52,5 @@ Add variables for timerId and timerDescription
 
 ### Version 2.0.0
 Updated for Companion version 3
+Updated for toggl API version 9
 
