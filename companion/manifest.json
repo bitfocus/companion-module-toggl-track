@@ -21,9 +21,9 @@
 		"apiVersion": "0.0.0",
 		"entrypoint": "../index.js"
 	},
-	"manufacturer": "toggl",
+	"manufacturer": "Toggl",
 	"products": [ 
-		"track"
+		"Track"
 	],
 	"keywords": [
 		"Logging", "Timer", "Task Tracking", "Time Tracking", "Project Management"
