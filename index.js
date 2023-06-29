@@ -1,443 +1,455 @@
-var instance_skel = require('../../instance_skel')
+// toggltrack module
+// Peter Daniel
 
-var debug
-var log
+import { InstanceBase, Regex, runEntrypoint, InstanceStatus } from '@companion-module/base'
+import { updateActions } from './actions.js'
+import { updatePresets } from './presets.js'
+import { updateVariables } from './variables.js'
+import { upgradeScripts } from './upgrades.js'
+import got from 'got'
 
-function instance(system, id, config) {
-	var self = this
+class toggltrack extends InstanceBase {
+	constructor(internal) {
+		super(internal)
 
-	// super-constructor
-	instance_skel.apply(this, arguments)
+		this.updateActions = updateActions.bind(this)
+		this.updatePresets = updatePresets.bind(this)
+		this.updateVariables = updateVariables.bind(this)
+		
+	}
+	
+	getConfigFields() {
+		// console.log('config fields')
+		return [
+			{
+				type: 'textinput',
+				id: 'apiToken',
+				label: 'Personal API Token from your Toggl user profile (required)',
+				width: 12,
+				default: '',
+			},
+			{
+				type: 'checkbox',
+				id: 'alwaysStart',
+				label: 'Always start a new timer even if there is one already running',
+				width: 12,
+				default: false,
+			},
+		]
+	}
+	
+	async destroy() {
+		console.log('destroy', this.id)
+	}
+	
+	async init(config) {
+		console.log('--- init toggltrack ---')
+		this.prefixUrl = 'https://api.track.toggl.com/api/v9/'
+		
+		this.config = config
+		
+		this.gotOptions = {
+			responseType: 'json',
+			throwHttpErrors: false
+		}
+		
+		this.gotOptions.prefixUrl = this.prefixUrl
 
-	return self
-}
+		this.workspace = null
+		this.workspaceName = null
+		this.projects = [{ id: '0', label: 'None' }]
 
-instance.prototype.updateConfig = function (config) {
-	var self = this
-	self.config = config
+		this.updateVariables()
+		this.updatePresets()
+		
+		this.setVariableValues({
+			timerId: null,
+			timerDuration: null,
+			timerDescription: null,
+			lastTimerDuration: null,
+			workspace: null,
+		})
 
-	self.auth()
-	self.getWorkspace()
-	self.actions()
-}
+		this.gotOptions.headers = this.auth()
+		
+		if (this.gotOptions.headers != null) {
+			this.getWorkspace().then(
+				this.getCurrentTimer()
+			)
+		}
 
-instance.prototype.init = function () {
-	var self = this
+		this.updateActions()
 
-	debug = self.debug
-	log = self.log
-
-	self.workspace = null
-	self.workspaceName = null
-	self.projects = [{ id: '0', label: 'None' }]
-
-	self.init_presets()
-	self.update_variables()
-	self.auth()
-	self.getWorkspace()
-	self.getCurrentTimer().then((timerId) => {
-		self.setVariable('timerId', timerId.id)
-		self.setVariable('timerDescription', timerId.description)
-	})
-	self.actions()
-}
-
-instance.prototype.auth = function () {
-	var self = this
-	self.header = []
-
-	if (self.config.apiToken !== null && self.config.apiToken.length > 0) {
-		auth = Buffer.from(self.config.apiToken + ':' + 'api_token').toString('base64')
-		self.header['Content-Type'] = 'application/json'
-		self.header['Authorization'] = 'Basic ' + auth
-	} else {
-		self.log('warn', 'Please enter your toggl API token')
 	}
 
-	// console.log(self.header)
-}
+	async configUpdated(config) {
+		console.log('config updated')
+		this.config = config
 
-instance.prototype.config_fields = function () {
-	var self = this
-	return [
-		{
-			type: 'text',
-			id: 'info',
-			width: 12,
-			label: 'Information',
-			value: 'This module is for the toggl track service',
-		},
-		{
-			type: 'textinput',
-			id: 'apiToken',
-			label: 'Personal API Token from your Toggl user profile (required)',
-			width: 12,
-			default: '',
-		},
-		{
-			type: 'checkbox',
-			id: 'alwaysStart',
-			label: 'Enable',
-			width: 1,
-			default: false,
-		},
-		{
-			type: 'text',
-			id: 'alwaysStartTxt',
-			label: 'Always start a new timer even if there is one already running',
-			width: 11,
-		},
-		{
-			type: 'text',
-			id: 'break',
-			label: '',
-			width: 12,
-		},
-	]
-}
-
-instance.prototype.destroy = function () {
-	var self = this
-	debug('destroy', self.id)
-}
-
-instance.prototype.update_variables = function (system) {
-	var self = this
-	var variables = []
-
-	variables.push(
-		{
-			label: 'Current Timer Id',
-			name: 'timerId',
-		},
-		{
-			label: 'Current Timer Description',
-			name: 'timerDescription',
+		this.gotOptions.headers = this.auth()
+		
+		if (this.gotOptions.headers != null) {
+			this.getWorkspace().then(
+				this.getCurrentTimer()
+			)
 		}
-	)
+		
+		this.updateActions()
+		this.updateVariables()
+	}
 
-	self.setVariableDefinitions(variables)
-	self.setVariable('timerId', null)
-	self.setVariable('timerDescription', null)
-}
+	auth() {
+		if (this.config.apiToken !== null && this.config.apiToken.length > 0) {
+			let auth = Buffer.from(this.config.apiToken + ':' + 'api_token').toString('base64')
+			let headers = {}
+			headers['Content-Type'] = 'application/json'
+			headers['authorization'] = 'Basic ' + auth
+			return headers
+		} else {
+			this.log('warn', 'Please enter your toggl API token')
+			return null
+		}
+		// console.log(this.gotOptions)
+	}
+	
+	async getCurrentTimer() {
+		console.log('function: getCurrentTimer')
+		
+		if (this.gotOptions.headers == null) {
+			this.log('warn', 'Not authorized')
+			return
+		}
+		let cmd = 'me/time_entries/current'
 
-instance.prototype.init_presets = function () {
-	var self = this
-	var presets = []
-
-	presets.push({
-		category: 'Timer',
-		label: 'Start',
-		bank: {
-			style: 'text',
-			text: 'Start Timer',
-			size: '18',
-			color: 16777215,
-			bgcolor: 0,
-		},
-		actions: [
-			{
-				action: 'startNewTimer',
-				options: {
-					description: '',
-					project: '0',
-				},
-			},
-		],
-	})
-
-	presets.push({
-		category: 'Timer',
-		label: 'Stop',
-		bank: {
-			style: 'text',
-			text: 'Stop Timer',
-			size: '18',
-			color: 16777215,
-			bgcolor: 0,
-		},
-		actions: [
-			{
-				action: 'stopCurrentTimer',
-			},
-		],
-	})
-
-	self.setPresetDefinitions(presets)
-}
-
-instance.prototype.actions = function (system) {
-	var self = this
-
-	self.setActions({
-		startNewTimer: {
-			label: 'Start New Timer',
-			options: [
-				{
-					type: 'textinput',
-					label: 'Description',
-					id: 'description',
-					default: '',
-				},
-				{
-					type: 'dropdown',
-					label: 'Project',
-					id: 'project',
-					default: '0',
-					choices: self.projects,
-				},
-			],
-		},
-		getCurrentTimer: {
-			label: 'Get Current Timer',
-		},
-		stopCurrentTimer: {
-			label: 'Stop Current Timer',
-		},
-		refreshProjects: {
-			label: 'Refresh Project List',
-		},
-	})
-}
-
-instance.prototype.action = function (action) {
-	var self = this
-	const opt = action.options
-
-	switch (action.action) {
-		case 'startNewTimer': {
-			self.getCurrentTimer().then((timerId) => {
-				if (timerId === undefined || timerId === null || self.config.alwaysStart === true) {
-					// no timer currently running or we want to restart it
-					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/start'
-					if (opt.project == '0') {
-						var body = '{"time_entry":{"description":"' + opt.description + '","created_with":"companion"}}'
+		return new Promise((resolve, reject) => {
+			this.sendGetCommand(cmd).then(
+				(result) => {
+					if (typeof result === 'object' && result !== null) {
+						if ('id' in result) {
+							this.setVariableValues({
+								timerId: result.id,
+								timerDescription: result.description,
+								timerDuration: result.duration,
+							})
+							this.log('info', 'Current timer id: ' + result.id)
+							resolve(result.id)
+						} else {
+							this.log('info', 'No current timer (no id in data)')
+							this.setVariableValues({
+								timerId: null,
+								timerDescription: null,
+								timerDuration: null
+							})
+							resolve(null)
+						}
 					} else {
-						var body =
-							'{"time_entry":{"description":"' +
-							opt.description +
-							'","created_with":"companion","pid":"' +
-							opt.project +
-							'"}}'
+						this.log('info', 'No current timer (no object)')
+							this.setVariableValues({
+							timerId: null,
+							timerDescription: null,
+							timerDuration: null
+						})
+						resolve(null)
 					}
-					self.sendCommand('rest', cmd, body).then((result) => {
-						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
-							self.log('debug', 'New timer started ' + result.data.id)
-							self.setVariable('timerId', result.data.id)
-							self.setVariable('timerDescription', result.data.description)
-						} else {
-							self.log('warn', 'Error starting timer')
-						}
-					})
-				} else {
-					self.log('debug', 'A timer is already running ' + timerId.id)
 				}
-			})
-			break
-		}
-		case 'stopCurrentTimer': {
-			self.getCurrentTimer().then((timerId) => {
-				self.log('debug', 'Current timer id ' + timerId.id)
-				if (timerId.id !== null && timerId.id !== undefined) {
-					var cmd = 'https://api.track.toggl.com/api/v8/time_entries/' + timerId.id + '/stop'
-					self.sendCommand('rest_put', cmd).then((result) => {
-						if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
-							self.log('debug', 'Stopped ' + result.data.id + ', duration ' + result.data.duration)
-							self.setVariable('timerId', null)
-							self.setVariable('timerDescription', null)
-						} else {
-							self.log('warn', 'Error stopping timer')
-						}
-					})
-				} else {
-					self.log('warn', 'No running timer to stop or running timer id unknown')
-				}
-			})
-			break
-		}
-		case 'getCurrentTimer': {
-			self.getCurrentTimer().then((timerId) => {
-				self.log('debug', 'Current timer id ' + timerId.id + ' ' + timerId.description)
-				self.setVariable('timerId', timerId.id)
-				self.setVariable('timerDescription', timerId.description)
-			})
-			break
-		}
-		case 'refreshProjects': {
-			self.getWorkspace()
-			break
-		}
-		default:
-			break
+			)
+		})
 	}
-}
 
-instance.prototype.getWorkspace = function () {
-	var self = this
-	var cmd = 'https://api.track.toggl.com/api/v8/workspaces'
-	// console.log('getWorkspace')
-
-	// reset
-	self.workspace = null
-
-	// get workspace ID
-	self.sendCommand('rest_get', cmd).then(
-		(result) => {
-			// console.log('result ' + JSON.stringify(result, null, 4))
-			if (typeof result === 'object' && result !== null) {
-				console.log('Found ' + result.length + ' workspace')
-				// only interested in first workspace
-				if ('id' in result[0]) {
-					self.workspace = result[0].id
-					self.workspaceName = result[0].name
-					console.log('Workspace ' + self.workspace + ' ' + self.workspaceName)
-					self.log('debug', 'Workspace ' + self.workspace + ':' + self.workspaceName)
-					self.getProjects()
-				}
-			} else {
-				console.log('result ' + JSON.stringify(result, null, 4))
-				self.log('debug', 'No workspace')
-			}
-		},
-		(error) => {
-			console.log('error ' + error)
-			self.log('debug', 'Error getting workspace')
+	async getWorkspace() {
+		let cmd = 'workspaces'
+		console.log('function: getWorkspace')
+		
+		if (this.gotOptions.headers == null) {
+			this.log('warn', 'Not authorized')
+			return
 		}
-	)
-}
-
-instance.prototype.getProjects = function () {
-	var self = this
-
-	if (self.workspace !== null) {
-		var cmd = 'https://api.track.toggl.com/api/v8/workspaces/' + self.workspace + '/projects'
-		self.sendCommand('rest_get', cmd).then(
+		
+		// reset
+		this.workspace = null
+		this.setVariableValues({
+			workspace: null
+		})
+		
+		// get workspace ID
+		this.sendGetCommand(cmd).then(
 			(result) => {
 				// console.log('result ' + JSON.stringify(result, null, 4))
 				if (typeof result === 'object' && result !== null) {
-					// reset
-					self.projects = []
-
-					for (p = 0; p < result.length; p++) {
-						if ('id' in result[p]) {
-							self.projects.push({
-								id: result[p].id.toString(),
-								label: result[p].name,
-							})
-							self.log('debug', 'Project ' + result[p].id + ':' + result[p].name)
-						}
+					console.log('Found ' + result.length + ' workspace')
+					// only interested in first workspace
+					if ('id' in result[0]) {
+						this.workspace = result[0].id
+						this.workspaceName = result[0].name
+						this.log('info', 'Workspace: ' + this.workspace + ' - ' + this.workspaceName)
+						this.setVariableValues({
+							workspace: this.workspaceName
+						})
+						this.getProjects()
 					}
-
-					self.projects.sort((a, b) => {
-						fa = a.label.toLowerCase()
-						fb = b.label.toLowerCase()
-
-						if (fa < fb) {
-							return -1
-						}
-						if (fa > fb) {
-							return 1
-						}
-						return 0
-					})
-
-					self.projects.unshift({ id: '0', label: 'None' })
-					console.log('Projects:')
-					console.log(self.projects)
-					self.actions()
 				} else {
-					console.log(result)
-					self.log('debug', 'No projects')
+					console.log('result ' + JSON.stringify(result, null, 4))
+					this.log('debug', 'No workspace')
 				}
-			},
-			(error) => {
-				console.log('error ' + error)
-				self.log('debug', 'Error getting projects')
 			}
 		)
 	}
-}
 
-instance.prototype.getCurrentTimer = function () {
-	var self = this
-	var cmd = 'https://api.track.toggl.com/api/v8/time_entries/current'
+	getProjects() {
+		console.log('function: getProjects')
 
-	return new Promise((resolve, reject) => {
-		self.sendCommand('rest_get', cmd).then(
-			(result) => {
-				if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
-					if ('id' in result.data) {
-						resolve(result.data)
+		if (this.workspace !== null) {
+			let cmd = 'workspaces/' + this.workspace + '/projects'
+			this.sendGetCommand(cmd).then(
+				(result) => {
+					// console.log('result ' + JSON.stringify(result, null, 4))
+					if (typeof result === 'object' && result !== null) {
+						// reset
+						this.projects = []
+				
+						for (let p = 0; p < result.length; p++) {
+							if ('id' in result[p]) {
+								if (result[p].active === true) {
+									// don't add archived projects
+									this.projects.push({
+										id: result[p].id.toString(),
+										label: result[p].name,
+									})
+								}
+								// this.log('debug', 'Project ' + result[p].id + ':' + result[p].name)
+							}
+						}
+
+						this.projects.sort((a, b) => {
+							let fa = a.label.toLowerCase()
+							let fb = b.label.toLowerCase()
+				
+							if (fa < fb) {
+								return -1
+							}
+							if (fa > fb) {
+								return 1
+							}
+							return 0
+						})
+
+						this.projects.unshift({ id: '0', label: 'None' })
+						console.log('Projects:')
+						console.log(this.projects)
+						this.updateActions()
 					} else {
-						self.log('debug', 'Error getting current timer (no id in data)')
-						self.setVariable('timerId', null)
-						self.setVariable('timerDescription', null)
-						resolve(null)
+						console.log(result)
+						this.log('debug', 'No projects')
 					}
+				})
+		}	
+	}
+
+	// getTimerDuration(id) {
+	// 	let cmd = 'time_entries/' + id
+	// 
+	// 	return new Promise((resolve, reject) => {
+	// 		self.sendCommand('rest_get', cmd).then(
+	// 			(result) => {
+	// 				if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
+	// 					if ('duration' in result.data) {
+	// 						self.setVariable('timerDuration', result.data.duration)
+	// 						resolve(result.data.duration)
+	// 					} else {
+	// 						self.log('debug', 'Error getting current timer duration (no id in data)')
+	// 						self.setVariable('timerDuration', null)
+	// 						resolve(null)
+	// 					}
+	// 				} else {
+	// 					self.log('debug', 'Error getting current timer duration (no object)')
+	// 					self.setVariable('timerDuration', null)
+	// 					resolve(null)
+	// 				}
+	// 			},
+	// 			(error) => {
+	// 				console.log('error ' + error)
+	// 				self.log('debug', 'Error getting current timer duration')
+	// 			}
+	// 		)
+	// 	})
+	// }
+
+	async startTimer(project, description) {
+		let body
+		let cmd
+		let timerId
+		const startTime = new Date()
+		this.getCurrentTimer().then((timerId) => {
+			console.log('timerId: ' + timerId)
+			if (timerId === null || this.config.alwaysStart === true) {
+				// no timer currently running or we want to restart it
+				cmd = 'workspaces/' + this.workspace + '/time_entries'
+				if (project == '0') {
+					body = '{"wid":' + this.workspace + ',"description":"' + description + 
+					'","created_with":"companion",' + '"start":"' + startTime.toISOString() + '","duration":-1}'
 				} else {
-					self.log('debug', 'Error getting current timer (no object)')
-					self.setVariable('timerId', null)
-					self.setVariable('timerDescription', null)
-					resolve(null)
+					body =
+						'{"wid":' + this.workspace + ',"description":"' + description +
+						'","created_with":"companion","project_id":' + project +
+						',"start":"' + startTime.toISOString() + '","duration":-1}'
 				}
-			},
-			(error) => {
-				console.log('error ' + error)
-				self.log('debug', 'Error getting current timer')
+				// console.log(body)
+				this.sendPostCommand(cmd, body).then((result) => {
+					if (typeof result === 'object' && result !== null) {
+						this.log('info', 'New timer started ' + result.id + " " + result.description)
+						this.setVariableValues({
+							timerId: result.id,
+							timerDescription: result.description,
+							timerDuration: result.duration,
+						})
+					} else {
+						this.log('warn', 'Error starting timer')
+					}
+				})
+			} else {
+				this.log('info', 'A timer is already running ' + timerId + ' not starting a new one!')
 			}
-		)
-	})
-}
+		})
+	}
+	
+	async stopTimer() {
+		console.log('function: stopTimer')
 
-instance.prototype.sendCommand = function (mode, command, body = '') {
-	var self = this
-	console.log(mode + ' : ' + command)
+		this.getCurrentTimer().then((timerId) => {
+			this.log('info', 'Trying to stop current timer id: ' + timerId)
+			// console.log(typeof timerId)
+			if (typeof timerId === 'number' && timerId > 0) {
+				let cmd = 'workspaces/' + this.workspace + '/time_entries/' + timerId + '/stop'
+				this.sendPatchCommand(cmd).then((result) => {
+					if (typeof result === 'object' && result !== null && result !== undefined) {
+						this.log('info', 'Stopped ' + result.id + ', duration ' + result.duration)
+						this.setVariableValues({
+							timerId: null,
+							timerDescription: null,
+							timerDuration: null,
+							lastTimerDuration: result.duration,
+						})
+					} else {
+						this.log('warn', 'Error stopping timer')
+					}
+				})
+			} else {
+				this.log('warn', 'No running timer to stop or running timer id unknown')
+			}
+		})
+	}
 
-	switch (mode) {
-		case 'rest_get': {
-			return new Promise((resolve, reject) => {
-				self.system.emit(
-					mode,
-					command,
-					(err, { data, error, response }) => {
-						if (err) {
-							self.status(self.STATUS_ERROR)
-							console.log(error)
-							reject(error)
-							return
-						}
-						self.status(self.STATUS_OK)
-						resolve(data)
-					},
-					self.header
+	async sendGetCommand(GetURL) {
+		console.log('get: ' + GetURL)
+		let response
+
+		try {
+			response = await got.get(GetURL, this.gotOptions)
+			if (response.statusCode == 200) {
+				this.updateStatus(InstanceStatus.Ok)
+				return response.body
+			} else {
+				this.updateStatus(
+					InstanceStatus.UnknownError,
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
 				)
-			})
-			break
+				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
+				return null
+			}
+		} catch (error) {
+			console.log(error.message)
+			this.processError(error)
+			return null
 		}
-		case 'rest':
-		case 'rest_put': {
-			return new Promise((resolve, reject) => {
-				self.system.emit(
-					mode,
-					command,
-					body,
-					(err, { data, error, response }) => {
-						if (err) {
-							self.status(self.STATUS_ERROR)
-							console.log(error)
-							reject(error)
-							return
-						}
-						self.status(self.STATUS_OK)
-						resolve(data)
-					},
-					self.header
+	}
+
+	async sendPutCommand(PutURL) {
+		console.log('put: ' + PutURL)
+		let response
+
+		try {
+			response = await got.put(PutURL, this.gotOptions)
+			console.log('status: ' + response.statusCode)
+			if (response.statusCode == 200) {
+				console.log(response.body)
+				return response.body
+			} else {
+				this.updateStatus(
+					InstanceStatus.UnknownError,
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
 				)
-			})
-			break
+				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
+				return null
+			}
+		} catch (error) {
+			console.log(error.message)
+			this.processError(error)
+			return null
 		}
+	}
+
+	async sendPatchCommand(PatchURL) {
+		console.log('patch: ' + PatchURL)
+		let response
+
+		try {
+			response = await got.patch(PatchURL, this.gotOptions)
+			// console.log('status: ' + response.statusCode)
+			if (response.statusCode == 200) {
+				// console.log(response.body)
+				return response.body
+			} else {
+				this.updateStatus(
+					InstanceStatus.UnknownError,
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+				)
+				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
+				return null
+			}
+		} catch (error) {
+			console.log(error.message)
+			this.processError(error)
+			return null
+		}
+	}
+
+	async sendPostCommand(cmd, body) {
+
+		console.log(body)
+		let response
+		let postdata = {}
+		postdata.prefixUrl = this.prefixUrl
+		postdata.responseType = 'json',
+		postdata.throwHttpErrors = false
+		postdata.headers = this.auth()
+		postdata.json = JSON.parse(body)
+
+		// console.log(postdata)
+		
+		try {
+			response = await got.post(cmd, postdata)
+			// console.log(response.request.requestUrl)
+			// console.log(response.statusCode)
+			if (response.statusCode == 200) {
+				return response.body
+			} else {
+				this.updateStatus(
+					InstanceStatus.UnknownError,
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+				)
+				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
+				return null
+			}
+		} catch (error) {
+			console.log(error.message)
+			this.processError(error)
+			return null
+		}
+	}
+
+	processError(error) {
+		console.log('gotError: ' + error.code)
 	}
 }
 
-instance_skel.extendedBy(instance)
-exports = module.exports = instance
+runEntrypoint(toggltrack, upgradeScripts)
