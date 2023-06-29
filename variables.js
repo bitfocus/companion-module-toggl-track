@@ -1,6 +1,6 @@
 export function updateVariables() {
 	let variables = []
-	
+
 	variables.push(
 		{
 			name: 'Workspace',
@@ -23,7 +23,6 @@ export function updateVariables() {
 			variableId: 'timerDescription',
 		}
 	)
-	
+
 	this.setVariableDefinitions(variables)
-	
 }

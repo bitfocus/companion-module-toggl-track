@@ -13,8 +13,10 @@ export function updatePresets() {
 			color: combineRgb(255, 255, 255),
 			bgcolor: combineRgb(0, 0, 0),
 		},
-		steps: [{
-				down: [{
+		steps: [
+			{
+				down: [
+					{
 						actionId: 'startNewTimer',
 						options: {
 							description: '',
@@ -38,12 +40,12 @@ export function updatePresets() {
 			color: combineRgb(255, 255, 255),
 			bgcolor: combineRgb(0, 0, 0),
 		},
-		steps: [{
+		steps: [
+			{
 				down: [
 					{
 						actionId: 'stopCurrentTimer',
-						options: {
-						},
+						options: {},
 					},
 				],
 				up: [],

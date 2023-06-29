@@ -22,7 +22,7 @@ export function updateActions() {
 			this.startTimer(options.project, options.description)
 		},
 	}
-	
+
 	actions['getCurrentTimer'] = {
 		name: 'Get Current Timer',
 		options: [],
@@ -30,7 +30,7 @@ export function updateActions() {
 			this.getCurrentTimer()
 		},
 	}
-	
+
 	actions['stopCurrentTimer'] = {
 		name: 'Stop Current Timer',
 		options: [],
@@ -38,7 +38,7 @@ export function updateActions() {
 			this.stopTimer()
 		},
 	}
-	
+
 	actions['refreshProjects'] = {
 		name: 'Refresh Project List',
 		options: [],

@@ -15,9 +15,8 @@ class toggltrack extends InstanceBase {
 		this.updateActions = updateActions.bind(this)
 		this.updatePresets = updatePresets.bind(this)
 		this.updateVariables = updateVariables.bind(this)
-		
 	}
-	
+
 	getConfigFields() {
 		// console.log('config fields')
 		return [
@@ -37,22 +36,22 @@ class toggltrack extends InstanceBase {
 			},
 		]
 	}
-	
+
 	async destroy() {
 		console.log('destroy', this.id)
 	}
-	
+
 	async init(config) {
 		console.log('--- init toggltrack ---')
 		this.prefixUrl = 'https://api.track.toggl.com/api/v9/'
-		
+
 		this.config = config
-		
+
 		this.gotOptions = {
 			responseType: 'json',
-			throwHttpErrors: false
+			throwHttpErrors: false,
 		}
-		
+
 		this.gotOptions.prefixUrl = this.prefixUrl
 
 		this.workspace = null
@@ -61,7 +60,7 @@ class toggltrack extends InstanceBase {
 
 		this.updateVariables()
 		this.updatePresets()
-		
+
 		this.setVariableValues({
 			timerId: null,
 			timerDuration: null,
@@ -71,15 +70,12 @@ class toggltrack extends InstanceBase {
 		})
 
 		this.gotOptions.headers = this.auth()
-		
+
 		if (this.gotOptions.headers != null) {
-			this.getWorkspace().then(
-				this.getCurrentTimer()
-			)
+			this.getWorkspace().then(this.getCurrentTimer())
 		}
 
 		this.updateActions()
-
 	}
 
 	async configUpdated(config) {
@@ -87,13 +83,11 @@ class toggltrack extends InstanceBase {
 		this.config = config
 
 		this.gotOptions.headers = this.auth()
-		
+
 		if (this.gotOptions.headers != null) {
-			this.getWorkspace().then(
-				this.getCurrentTimer()
-			)
+			this.getWorkspace().then(this.getCurrentTimer())
 		}
-		
+
 		this.updateActions()
 		this.updateVariables()
 	}
@@ -111,10 +105,10 @@ class toggltrack extends InstanceBase {
 		}
 		// console.log(this.gotOptions)
 	}
-	
+
 	async getCurrentTimer() {
 		console.log('function: getCurrentTimer')
-		
+
 		if (this.gotOptions.headers == null) {
 			this.log('warn', 'Not authorized')
 			return
@@ -122,77 +116,73 @@ class toggltrack extends InstanceBase {
 		let cmd = 'me/time_entries/current'
 
 		return new Promise((resolve, reject) => {
-			this.sendGetCommand(cmd).then(
-				(result) => {
-					if (typeof result === 'object' && result !== null) {
-						if ('id' in result) {
-							this.setVariableValues({
-								timerId: result.id,
-								timerDescription: result.description,
-								timerDuration: result.duration,
-							})
-							this.log('info', 'Current timer id: ' + result.id)
-							resolve(result.id)
-						} else {
-							this.log('info', 'No current timer (no id in data)')
-							this.setVariableValues({
-								timerId: null,
-								timerDescription: null,
-								timerDuration: null
-							})
-							resolve(null)
-						}
+			this.sendGetCommand(cmd).then((result) => {
+				if (typeof result === 'object' && result !== null) {
+					if ('id' in result) {
+						this.setVariableValues({
+							timerId: result.id,
+							timerDescription: result.description,
+							timerDuration: result.duration,
+						})
+						this.log('info', 'Current timer id: ' + result.id)
+						resolve(result.id)
 					} else {
-						this.log('info', 'No current timer (no object)')
-							this.setVariableValues({
+						this.log('info', 'No current timer (no id in data)')
+						this.setVariableValues({
 							timerId: null,
 							timerDescription: null,
-							timerDuration: null
+							timerDuration: null,
 						})
 						resolve(null)
 					}
+				} else {
+					this.log('info', 'No current timer (no object)')
+					this.setVariableValues({
+						timerId: null,
+						timerDescription: null,
+						timerDuration: null,
+					})
+					resolve(null)
 				}
-			)
+			})
 		})
 	}
 
 	async getWorkspace() {
 		let cmd = 'workspaces'
 		console.log('function: getWorkspace')
-		
+
 		if (this.gotOptions.headers == null) {
 			this.log('warn', 'Not authorized')
 			return
 		}
-		
+
 		// reset
 		this.workspace = null
 		this.setVariableValues({
-			workspace: null
+			workspace: null,
 		})
-		
+
 		// get workspace ID
-		this.sendGetCommand(cmd).then(
-			(result) => {
-				// console.log('result ' + JSON.stringify(result, null, 4))
-				if (typeof result === 'object' && result !== null) {
-					console.log('Found ' + result.length + ' workspace')
-					// only interested in first workspace
-					if ('id' in result[0]) {
-						this.workspace = result[0].id
-						this.workspaceName = result[0].name
-						this.log('info', 'Workspace: ' + this.workspace + ' - ' + this.workspaceName)
-						this.setVariableValues({
-							workspace: this.workspaceName
-						})
-						this.getProjects()
-					}
-				} else {
-					console.log('result ' + JSON.stringify(result, null, 4))
-					this.log('debug', 'No workspace')
+		this.sendGetCommand(cmd).then((result) => {
+			// console.log('result ' + JSON.stringify(result, null, 4))
+			if (typeof result === 'object' && result !== null) {
+				console.log('Found ' + result.length + ' workspace')
+				// only interested in first workspace
+				if ('id' in result[0]) {
+					this.workspace = result[0].id
+					this.workspaceName = result[0].name
+					this.log('info', 'Workspace: ' + this.workspace + ' - ' + this.workspaceName)
+					this.setVariableValues({
+						workspace: this.workspaceName,
+					})
+					this.getProjects()
 				}
+			} else {
+				console.log('result ' + JSON.stringify(result, null, 4))
+				this.log('debug', 'No workspace')
 			}
-		)
+		})
 	}
 
 	getProjects() {
@@ -200,54 +190,53 @@ class toggltrack extends InstanceBase {
 
 		if (this.workspace !== null) {
 			let cmd = 'workspaces/' + this.workspace + '/projects'
-			this.sendGetCommand(cmd).then(
-				(result) => {
-					// console.log('result ' + JSON.stringify(result, null, 4))
-					if (typeof result === 'object' && result !== null) {
-						// reset
-						this.projects = []
-				
-						for (let p = 0; p < result.length; p++) {
-							if ('id' in result[p]) {
-								if (result[p].active === true) {
-									// don't add archived projects
-									this.projects.push({
-										id: result[p].id.toString(),
-										label: result[p].name,
-									})
-								}
-								// this.log('debug', 'Project ' + result[p].id + ':' + result[p].name)
+			this.sendGetCommand(cmd).then((result) => {
+				// console.log('result ' + JSON.stringify(result, null, 4))
+				if (typeof result === 'object' && result !== null) {
+					// reset
+					this.projects = []
+
+					for (let p = 0; p < result.length; p++) {
+						if ('id' in result[p]) {
+							if (result[p].active === true) {
+								// don't add archived projects
+								this.projects.push({
+									id: result[p].id.toString(),
+									label: result[p].name,
+								})
 							}
+							// this.log('debug', 'Project ' + result[p].id + ':' + result[p].name)
 						}
-
-						this.projects.sort((a, b) => {
-							let fa = a.label.toLowerCase()
-							let fb = b.label.toLowerCase()
-				
-							if (fa < fb) {
-								return -1
-							}
-							if (fa > fb) {
-								return 1
-							}
-							return 0
-						})
-
-						this.projects.unshift({ id: '0', label: 'None' })
-						console.log('Projects:')
-						console.log(this.projects)
-						this.updateActions()
-					} else {
-						console.log(result)
-						this.log('debug', 'No projects')
 					}
-				})
-		}	
+
+					this.projects.sort((a, b) => {
+						let fa = a.label.toLowerCase()
+						let fb = b.label.toLowerCase()
+
+						if (fa < fb) {
+							return -1
+						}
+						if (fa > fb) {
+							return 1
+						}
+						return 0
+					})
+
+					this.projects.unshift({ id: '0', label: 'None' })
+					console.log('Projects:')
+					console.log(this.projects)
+					this.updateActions()
+				} else {
+					console.log(result)
+					this.log('debug', 'No projects')
+				}
+			})
+		}
 	}
 
 	// getTimerDuration(id) {
 	// 	let cmd = 'time_entries/' + id
-	// 
+	//
 	// 	return new Promise((resolve, reject) => {
 	// 		self.sendCommand('rest_get', cmd).then(
 	// 			(result) => {
@@ -285,18 +274,31 @@ class toggltrack extends InstanceBase {
 				// no timer currently running or we want to restart it
 				cmd = 'workspaces/' + this.workspace + '/time_entries'
 				if (project == '0') {
-					body = '{"wid":' + this.workspace + ',"description":"' + description + 
-					'","created_with":"companion",' + '"start":"' + startTime.toISOString() + '","duration":-1}'
+					body =
+						'{"wid":' +
+						this.workspace +
+						',"description":"' +
+						description +
+						'","created_with":"companion",' +
+						'"start":"' +
+						startTime.toISOString() +
+						'","duration":-1}'
 				} else {
 					body =
-						'{"wid":' + this.workspace + ',"description":"' + description +
-						'","created_with":"companion","project_id":' + project +
-						',"start":"' + startTime.toISOString() + '","duration":-1}'
+						'{"wid":' +
+						this.workspace +
+						',"description":"' +
+						description +
+						'","created_with":"companion","project_id":' +
+						project +
+						',"start":"' +
+						startTime.toISOString() +
+						'","duration":-1}'
 				}
 				// console.log(body)
 				this.sendPostCommand(cmd, body).then((result) => {
 					if (typeof result === 'object' && result !== null) {
-						this.log('info', 'New timer started ' + result.id + " " + result.description)
+						this.log('info', 'New timer started ' + result.id + ' ' + result.description)
 						this.setVariableValues({
 							timerId: result.id,
 							timerDescription: result.description,
@@ -311,7 +313,7 @@ class toggltrack extends InstanceBase {
 			}
 		})
 	}
-	
+
 	async stopTimer() {
 		console.log('function: stopTimer')
 
@@ -414,18 +416,16 @@ class toggltrack extends InstanceBase {
 	}
 
 	async sendPostCommand(cmd, body) {
-
 		console.log(body)
 		let response
 		let postdata = {}
 		postdata.prefixUrl = this.prefixUrl
-		postdata.responseType = 'json',
-		postdata.throwHttpErrors = false
+		;(postdata.responseType = 'json'), (postdata.throwHttpErrors = false)
 		postdata.headers = this.auth()
 		postdata.json = JSON.parse(body)
 
 		// console.log(postdata)
-		
+
 		try {
 			response = await got.post(cmd, postdata)
 			// console.log(response.request.requestUrl)
