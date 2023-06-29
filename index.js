@@ -19,7 +19,7 @@ class toggltrack extends InstanceBase {
 	}
 	
 	getConfigFields() {
-		console.log('config fields')
+		// console.log('config fields')
 		return [
 			{
 				type: 'textinput',
@@ -61,14 +61,7 @@ class toggltrack extends InstanceBase {
 
 		this.updateVariables()
 		this.updatePresets()
-
-		this.gotOptions.headers = this.auth()
-		this.getWorkspace()
 		
-		this.getCurrentTimer().then((timerId) => {
-			console.log('Init current timer id: ' + timerId)
-		})
-
 		this.setVariableValues({
 			timerId: null,
 			timerDuration: null,
@@ -76,6 +69,14 @@ class toggltrack extends InstanceBase {
 			lastTimerDuration: null,
 			workspace: null,
 		})
+
+		this.gotOptions.headers = this.auth()
+		
+		if (this.gotOptions.headers != null) {
+			this.getWorkspace().then(
+				this.getCurrentTimer()
+			)
+		}
 
 		this.updateActions()
 
@@ -85,7 +86,7 @@ class toggltrack extends InstanceBase {
 		console.log('config updated')
 		this.config = config
 
-		this.auth()
+		this.gotOptions.headers = this.auth()
 		this.getWorkspace()
 		this.updateActions()
 		this.updateVariables()
@@ -97,7 +98,6 @@ class toggltrack extends InstanceBase {
 			let headers = {}
 			headers['Content-Type'] = 'application/json'
 			headers['authorization'] = 'Basic ' + auth
-			console.log(headers)
 			return headers
 		} else {
 			this.log('warn', 'Please enter your toggl API token')
@@ -109,7 +109,7 @@ class toggltrack extends InstanceBase {
 	async getCurrentTimer() {
 		console.log('function: getCurrentTimer')
 		
-		if (this.gotOptions.headers.authorization == undefined) {
+		if (this.gotOptions.headers == null) {
 			this.log('warn', 'Not authorized')
 			return
 		}
@@ -150,11 +150,11 @@ class toggltrack extends InstanceBase {
 		})
 	}
 
-	getWorkspace() {
+	async getWorkspace() {
 		let cmd = 'workspaces'
 		console.log('function: getWorkspace')
 		
-		if (this.gotOptions.headers.authorization == undefined) {
+		if (this.gotOptions.headers == null) {
 			this.log('warn', 'Not authorized')
 			return
 		}
@@ -287,7 +287,7 @@ class toggltrack extends InstanceBase {
 						'","created_with":"companion","project_id":' + project +
 						',"start":"' + startTime.toISOString() + '","duration":-1}'
 				}
-				console.log(body)
+				// console.log(body)
 				this.sendPostCommand(cmd, body).then((result) => {
 					if (typeof result === 'object' && result !== null) {
 						this.log('info', 'New timer started ' + result.id + " " + result.description)
