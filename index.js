@@ -87,7 +87,13 @@ class toggltrack extends InstanceBase {
 		this.config = config
 
 		this.gotOptions.headers = this.auth()
-		this.getWorkspace()
+		
+		if (this.gotOptions.headers != null) {
+			this.getWorkspace().then(
+				this.getCurrentTimer()
+			)
+		}
+		
 		this.updateActions()
 		this.updateVariables()
 	}
