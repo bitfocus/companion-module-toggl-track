@@ -25,6 +25,7 @@ class toggltrack extends InstanceBase {
 				id: 'apiToken',
 				label: 'Personal API Token from your Toggl user profile (required)',
 				width: 12,
+				required: true,
 				default: '',
 			},
 			{
@@ -32,6 +33,7 @@ class toggltrack extends InstanceBase {
 				id: 'alwaysStart',
 				label: 'Always start a new timer even if there is one already running',
 				width: 12,
+				required: false,
 				default: false,
 			},
 		]
