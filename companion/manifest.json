@@ -3,7 +3,7 @@
 	"name": "toggl-track",
 	"shortname": "toggl",
 	"description": "Companion module for toggltrack timers",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-toggl-track.git",
 	"bugs": "https://github.com/bitfocus/companion-module-toggl-track/issues",
