@@ -12,9 +12,7 @@
 			"name": "Peter Daniel"
 		}
 	],
-	"legacyIds": [
-		"toggl-track"
-	],
+	"legacyIds": [],
 	"runtime": {
 		"type": "node18",
 		"api": "nodejs-ipc",

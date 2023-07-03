@@ -58,3 +58,6 @@ Updated for toggl API version 9
 ### Version 2.0.1
 Make the API token config field required
 
+Fix manifest file
+
+
