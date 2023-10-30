@@ -1,7 +1,7 @@
 {
 	"id": "toggl-track",
 	"name": "toggl-track",
-	"shortname": "toggl",
+	"shortname": "toggl-track",
 	"description": "Companion module for toggltrack timers",
 	"version": "2.0.1",
 	"license": "MIT",
