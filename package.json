@@ -1,9 +1,11 @@
 {
 	"name": "toggl-track",
-	"version": "2.0.1",
-	"main": "index.js",
+	"version": "2.0.2",
+	"main": "main.js",
 	"type": "module",
 	"scripts": {
+		"format": "prettier -w .",
+		"package": "companion-module-build",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {
@@ -12,10 +14,12 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"@companion-module/base": "~1.4",
+		"@companion-module/base": "~1.11",
 		"got": "~13.0.0"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "~1.1"
-	}
+		"@companion-module/tools": "~2.1.0",
+		"prettier": "^3.4.2"
+	},
+	"prettier": "@companion-module/tools/.prettierrc.json"
 }

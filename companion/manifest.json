@@ -10,6 +10,9 @@
 	"maintainers": [
 		{
 			"name": "Peter Daniel"
+		},
+		{
+			"name": "Matthias Kesler"
 		}
 	],
 	"legacyIds": [],
@@ -17,13 +20,9 @@
 		"type": "node18",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
-		"entrypoint": "../index.js"
+		"entrypoint": "../main.js"
 	},
 	"manufacturer": "Toggl",
-	"products": [ 
-		"Track"
-	],
-	"keywords": [
-		"Logging", "Timer", "Task Tracking", "Time Tracking", "Project Management"
-	]
+	"products": ["Track"],
+	"keywords": ["Logging", "Timer", "Task Tracking", "Time Tracking", "Project Management"]
 }

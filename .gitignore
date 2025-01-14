@@ -1,5 +1,8 @@
 node_modules/
 package-lock.json
-.nova
-archive
 .DS_Store
+/pkg
+/pkg.tgz
+/dist
+DEBUG-*
+/.yarn

@@ -2,19 +2,16 @@
 // Peter Daniel
 
 import { InstanceBase, Regex, runEntrypoint, InstanceStatus } from '@companion-module/base'
-import { updateActions } from './actions.js'
-import { updatePresets } from './presets.js'
-import { updateVariables } from './variables.js'
-import { upgradeScripts } from './upgrades.js'
+import UpdateActions from './actions.js'
+import UpdatePresets from './presets.js'
+import UpdateVariableDefinitions from './variables.js'
+import UpgradeScripts from './upgrades.js'
+
 import got from 'got'
 
 class toggltrack extends InstanceBase {
 	constructor(internal) {
 		super(internal)
-
-		this.updateActions = updateActions.bind(this)
-		this.updatePresets = updatePresets.bind(this)
-		this.updateVariables = updateVariables.bind(this)
 	}
 
 	getConfigFields() {
@@ -49,6 +46,8 @@ class toggltrack extends InstanceBase {
 
 		this.config = config
 
+		this.updateStatus(InstanceStatus.Ok)
+
 		this.gotOptions = {
 			responseType: 'json',
 			throwHttpErrors: false,
@@ -60,7 +59,7 @@ class toggltrack extends InstanceBase {
 		this.workspaceName = null
 		this.projects = [{ id: '0', label: 'None' }]
 
-		this.updateVariables()
+		this.updateVariableDefinitions()
 		this.updatePresets()
 
 		this.setVariableValues({
@@ -92,6 +91,21 @@ class toggltrack extends InstanceBase {
 
 		this.updateActions()
 		this.updateVariables()
+	}
+	updateActions() {
+		UpdateActions(this)
+	}
+
+	updateFeedbacks() {
+		UpdateFeedbacks(this)
+	}
+
+	updatePresets() {
+		UpdatePresets(this)
+	}
+
+	updateVariableDefinitions() {
+		UpdateVariableDefinitions(this)
 	}
 
 	auth() {
@@ -355,7 +369,7 @@ class toggltrack extends InstanceBase {
 			} else {
 				this.updateStatus(
 					InstanceStatus.UnknownError,
-					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`,
 				)
 				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
 				return null
@@ -380,7 +394,7 @@ class toggltrack extends InstanceBase {
 			} else {
 				this.updateStatus(
 					InstanceStatus.UnknownError,
-					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`,
 				)
 				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
 				return null
@@ -405,7 +419,7 @@ class toggltrack extends InstanceBase {
 			} else {
 				this.updateStatus(
 					InstanceStatus.UnknownError,
-					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`,
 				)
 				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
 				return null
@@ -437,7 +451,7 @@ class toggltrack extends InstanceBase {
 			} else {
 				this.updateStatus(
 					InstanceStatus.UnknownError,
-					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`
+					`Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`,
 				)
 				this.log('warn', `Unexpected HTTP status code: ${response.statusCode} - ${response.body.error}`)
 				return null
@@ -454,4 +468,4 @@ class toggltrack extends InstanceBase {
 	}
 }
 
-runEntrypoint(toggltrack, upgradeScripts)
+runEntrypoint(toggltrack, UpgradeScripts)
