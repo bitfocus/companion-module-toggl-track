@@ -1,4 +1,6 @@
-export default function (self) {
+import { TogglTrack } from './main.js'
+
+export default function (self: TogglTrack): void {
 	self.setActionDefinitions({
 		startNewTimer: {
 			name: 'Start New Timer',
@@ -14,35 +16,35 @@ export default function (self) {
 					label: 'Project',
 					id: 'project',
 					default: '0',
-					choices: self.projects,
+					choices: self.projects!,
 				},
 			],
-			callback: ({ options }) => {
-				self.startTimer(options.project, options.description)
+			callback: async ({ options }) => {
+				return self.startTimer(Number(options.project), options.description as string)
 			},
 		},
 
 		getCurrentTimer: {
 			name: 'Get Current Timer',
 			options: [],
-			callback: (action) => {
-				self.getCurrentTimer()
+			callback: async () => {
+				await self.getCurrentTimer()
 			},
 		},
 
 		stopCurrentTimer: {
 			name: 'Stop Current Timer',
 			options: [],
-			callback: (action) => {
-				self.stopTimer()
+			callback: async () => {
+				return self.stopTimer()
 			},
 		},
 
 		refreshProjects: {
 			name: 'Refresh Project List',
 			options: [],
-			callback: (action) => {
-				self.getWorkspace()
+			callback: async () => {
+				await self.getWorkspace()
 			},
 		},
 	})

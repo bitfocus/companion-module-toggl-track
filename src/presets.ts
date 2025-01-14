@@ -1,6 +1,7 @@
 import { combineRgb } from '@companion-module/base'
+import { TogglTrack } from './main.js'
 
-export default function (self) {
+export default function (self: TogglTrack): void {
 	self.setPresetDefinitions({
 		Start: {
 			type: 'button',
