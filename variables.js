@@ -1,7 +1,5 @@
-export function updateVariables() {
-	let variables = []
-
-	variables.push(
+export default function (self) {
+	self.setVariableDefinitions([
 		{
 			name: 'Workspace',
 			variableId: 'workspace',
@@ -21,8 +19,6 @@ export function updateVariables() {
 		{
 			name: 'Current Timer Description',
 			variableId: 'timerDescription',
-		}
-	)
-
-	this.setVariableDefinitions(variables)
+		},
+	])
 }

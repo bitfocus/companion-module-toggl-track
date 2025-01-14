@@ -1,51 +1,49 @@
-export function updateActions() {
-	let actions = {}
-
-	actions['startNewTimer'] = {
-		name: 'Start New Timer',
-		options: [
-			{
-				type: 'textinput',
-				label: 'Description',
-				id: 'description',
-				default: '',
+export default function (self) {
+	self.setActionDefinitions({
+		startNewTimer: {
+			name: 'Start New Timer',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Description',
+					id: 'description',
+					default: '',
+				},
+				{
+					type: 'dropdown',
+					label: 'Project',
+					id: 'project',
+					default: '0',
+					choices: self.projects,
+				},
+			],
+			callback: ({ options }) => {
+				self.startTimer(options.project, options.description)
 			},
-			{
-				type: 'dropdown',
-				label: 'Project',
-				id: 'project',
-				default: '0',
-				choices: this.projects,
+		},
+
+		getCurrentTimer: {
+			name: 'Get Current Timer',
+			options: [],
+			callback: (action) => {
+				self.getCurrentTimer()
 			},
-		],
-		callback: ({ options }) => {
-			this.startTimer(options.project, options.description)
 		},
-	}
 
-	actions['getCurrentTimer'] = {
-		name: 'Get Current Timer',
-		options: [],
-		callback: (action) => {
-			this.getCurrentTimer()
+		stopCurrentTimer: {
+			name: 'Stop Current Timer',
+			options: [],
+			callback: (action) => {
+				self.stopTimer()
+			},
 		},
-	}
 
-	actions['stopCurrentTimer'] = {
-		name: 'Stop Current Timer',
-		options: [],
-		callback: (action) => {
-			this.stopTimer()
+		refreshProjects: {
+			name: 'Refresh Project List',
+			options: [],
+			callback: (action) => {
+				self.getWorkspace()
+			},
 		},
-	}
-
-	actions['refreshProjects'] = {
-		name: 'Refresh Project List',
-		options: [],
-		callback: (action) => {
-			this.getWorkspace()
-		},
-	}
-
-	this.setActionDefinitions(actions)
+	})
 }
