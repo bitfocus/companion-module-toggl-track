@@ -1,4 +1,6 @@
-export default function (self) {
+import { TogglTrack } from './main.js'
+
+export default function (self: TogglTrack): void {
 	self.setVariableDefinitions([
 		{
 			name: 'Workspace',
