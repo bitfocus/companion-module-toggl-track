@@ -3,7 +3,8 @@ import { type SomeCompanionConfigField } from '@companion-module/base'
 export interface ModuleConfig {
 	apiToken?: string
 	workspaceName: string
-	alwaysStart?: boolean
+	alwaysStart: boolean
+	startTimerPoller: boolean
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -29,6 +30,13 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			type: 'checkbox',
 			id: 'alwaysStart',
 			label: 'Always start a new timer even if there is one already running',
+			width: 12,
+			default: false,
+		},
+		{
+			type: 'checkbox',
+			id: 'startTimerPoller',
+			label: 'Poll for current time entry every 30 seconds',
 			width: 12,
 			default: false,
 		},
