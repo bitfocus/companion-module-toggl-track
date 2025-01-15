@@ -210,7 +210,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		if (this.workspaceId == undefined) {
 			// no workspace found
 			this.log('debug', 'workspace not found. Response: ' + JSON.stringify(workspaces))
-			this.updateStatus(InstanceStatus.BadConfig, 'No workspace found')
+			this.updateStatus(InstanceStatus.BadConfig, 'Available Workspaces: ' + workspaces.map((ws) => ws.name).join(','))
 			return
 		}
 
