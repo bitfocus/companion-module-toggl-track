@@ -18,6 +18,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	workspaceId?: number // current active workspace id
 	workspaceName: string = '' // name of workspace
 	projects?: { id: number; label: string }[]
+	intervalId?: NodeJS.Timeout
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -29,6 +30,9 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 	async destroy(): Promise<void> {
 		this.log('info', 'destroy ' + this.id)
+		if (this.config.startTimerPoller) {
+			this.stopTimeEntryPoller()
+		}
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
@@ -56,6 +60,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		if (this.toggl && this.workspaceId) {
 			this.updateStatus(InstanceStatus.Ok)
 		}
+
+		if (this.config.startTimerPoller) {
+			this.startTimeEntryPoller()
+		}
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
@@ -63,6 +71,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		const apiTokenChanged: boolean = this.config.apiToken != config.apiToken
 		const workSpaceDefaultChanged: boolean = this.config.workspaceName != config.workspaceName
+		const timeEntryPollerChanged: boolean = this.config.startTimerPoller != config.startTimerPoller
 
 		this.config = config
 
@@ -73,6 +82,14 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		} else if (workSpaceDefaultChanged) {
 			this.log('debug', 'workspace default changed. reload workspaces')
 			await this.getWorkspace()
+		}
+
+		if (timeEntryPollerChanged) {
+			if (this.config.startTimerPoller) {
+				this.startTimeEntryPoller()
+			} else {
+				this.stopTimeEntryPoller()
+			}
 		}
 
 		this.updateActions()
@@ -115,6 +132,21 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			await this.getWorkspace()
 			await this.getCurrentTimer()
 		}
+	}
+
+	private startTimeEntryPoller(): void {
+		this.log('info', 'Starting TimeEntry-Poller')
+		// fetch current timer every 30 seconds
+		this.intervalId = setInterval(() => {
+			// this harms the linter (handle unawaited promise in an non-async context)
+			void (async () => {
+				await this.getCurrentTimer()
+			})()
+		}, 30 * 1000)
+	}
+	private stopTimeEntryPoller(): void {
+		this.log('info', 'Stopping TimeEntry-Poller')
+		clearInterval(this.intervalId)
 	}
 
 	async getCurrentTimer(): Promise<number | null> {
