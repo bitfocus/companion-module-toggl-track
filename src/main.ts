@@ -7,6 +7,7 @@ import UpdateActions from './actions.js'
 import UpdatePresets from './presets.js'
 import UpdateVariableDefinitions from './variables.js'
 import UpgradeScripts from './upgrades.js'
+import { UpdateFeedbacks } from './feedbacks.js'
 import { Toggl, ITimeEntry, IWorkspaceProject } from 'toggl-track'
 import { togglGetWorkspaces } from './toggl-extend.js'
 
@@ -56,6 +57,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		await this.initToggleConnection()
 
 		this.updateActions()
+		this.updateFeedbacks()
 
 		if (this.toggl && this.workspaceId) {
 			this.updateStatus(InstanceStatus.Ok)
@@ -105,6 +107,9 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	updateActions(): void {
 		UpdateActions(this)
 	}
+	updateFeedbacks(): void {
+		UpdateFeedbacks(this)
+	}
 
 	updatePresets(): void {
 		UpdatePresets(this)
@@ -149,6 +154,18 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		clearInterval(this.intervalId)
 	}
 
+	private setCurrentProject(projectID: number | undefined): void {
+		let pName: string | undefined
+		if (typeof projectID === 'number') {
+			pName = this.projects!.find((v) => v.id == projectID)?.label
+		}
+		this.setVariableValues({
+			timerProject: pName,
+			timerProjectID: projectID,
+		})
+		this.checkFeedbacks('ProjectRunningState')
+	}
+
 	async getCurrentTimer(): Promise<number | null> {
 		this.log('debug', 'function: getCurrentTimer')
 
@@ -167,6 +184,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDescription: entry.description,
 				timerDuration: entry.duration,
 			})
+			this.setCurrentProject(entry.project_id)
 
 			return entry.id
 		} else {
@@ -176,6 +194,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDescription: undefined,
 				timerDuration: undefined,
 			})
+			this.setCurrentProject(undefined)
 			return null
 		}
 	}
@@ -289,6 +308,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDescription: newEntry.description,
 				timerDuration: newEntry.duration,
 			})
+			this.setCurrentProject(newEntry.project_id)
 		} else {
 			this.log('info', 'A timer is already running ' + currentId + ' not starting a new one!')
 		}
@@ -314,6 +334,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDuration: undefined,
 				lastTimerDuration: updated.duration,
 			})
+			this.setCurrentProject(undefined)
 		} else {
 			this.log('warn', 'No running timer to stop or running timer id unknown')
 		}

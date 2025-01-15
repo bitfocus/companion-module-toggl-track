@@ -22,5 +22,13 @@ export default function (self: TogglTrack): void {
 			name: 'Current Timer Description',
 			variableId: 'timerDescription',
 		},
+		{
+			name: 'Current Timer Project ID',
+			variableId: 'timerProjectID',
+		},
+		{
+			name: 'Current Timer Project',
+			variableId: 'timerProject',
+		},
 	])
 }
