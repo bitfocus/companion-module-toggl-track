@@ -36,8 +36,6 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		this.config = config
 
-		this.updateStatus(InstanceStatus.Ok)
-
 		this.workspaceId = undefined
 		this.projects = [{ id: '0', label: 'None' }]
 
@@ -55,6 +53,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		await this.initToggleConnection()
 
 		this.updateActions()
+
+		if (this.toggl && this.workspaceId) {
+			this.updateStatus(InstanceStatus.Ok)
+		}
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
@@ -69,17 +71,20 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.log('debug', 'api token changed. init new toggle connection')
 			this.toggl = undefined
 			await this.initToggleConnection()
-		}
-		if (workSpaceDefaultChanged) {
+		} else if (workSpaceDefaultChanged) {
 			this.log('debug', 'workspace default changed. reload workspaces')
 			await this.getWorkspace()
 		}
 
 		this.updateActions()
 		this.updateVariables()
+		if (this.toggl && this.workspaceId) {
+			this.updateStatus(InstanceStatus.Ok)
+		}
 	}
 	updateVariables(): void {
-		throw new Error('Method not implemented.')
+		this.log('error', 'updateVariables not implemented')
+		//throw new Error('Method not implemented.')
 	}
 	updateActions(): void {
 		UpdateActions(this)
@@ -98,20 +103,23 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	}
 
 	async initToggleConnection(): Promise<void> {
-		if (this.config.apiToken!.length > 0) {
+		if (this.config.apiToken && this.config.apiToken.length > 0) {
 			this.toggl = new Toggl({
 				auth: {
-					token: this.config.apiToken!,
+					token: this.config.apiToken,
 				},
 			})
-			const logged: string = await this.toggl.me.logged()
-			this.log('debug', logged)
-			if (logged === 'OK') {
-				await this.getWorkspace()
-				await this.getCurrentTimer()
+
+			const resp = await this.toggl.me.logged()
+			if (resp !== '') {
+				this.log('warn', 'error during token check: ' + resp)
+				this.toggl = undefined
+				this.updateStatus(InstanceStatus.AuthenticationFailure, resp)
+				return
 			}
+			await this.getWorkspace()
+			await this.getCurrentTimer()
 		}
-		return
 	}
 
 	async getCurrentTimer(): Promise<number | null> {
@@ -175,6 +183,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		if (this.workspaceId == undefined) {
 			// no workspace found
 			//console.log('result ' + JSON.stringify(workspaces, null, 4))
+			this.updateStatus(InstanceStatus.BadConfig, 'No workspace found')
 			this.log('debug', 'No workspace found')
 			return
 		}
