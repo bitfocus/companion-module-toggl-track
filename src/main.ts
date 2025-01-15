@@ -17,7 +17,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 	workspaceId?: number // current active workspace id
 	workspaceName: string = '' // name of workspace
-	projects?: { id: string; label: string }[]
+	projects?: { id: number; label: string }[]
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -28,16 +28,15 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	}
 
 	async destroy(): Promise<void> {
-		console.log('destroy', this.id)
+		this.log('info', 'destroy ' + this.id)
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
-		console.log('--- init toggltrack ---')
+		this.log('info', '--- init toggltrack ' + this.id + ' ---')
 
 		this.config = config
 
-		this.workspaceId = undefined
-		this.projects = [{ id: '0', label: 'None' }]
+		this.projects = [{ id: 0, label: 'None' }]
 
 		this.updateVariableDefinitions()
 		this.updatePresets()
@@ -60,7 +59,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
-		console.log('config updated')
+		this.log('debug', 'config updated')
 
 		const apiTokenChanged: boolean = this.config.apiToken != config.apiToken
 		const workSpaceDefaultChanged: boolean = this.config.workspaceName != config.workspaceName
@@ -77,7 +76,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		}
 
 		this.updateActions()
-		this.updateVariables()
+		//this.updateVariables()
 		if (this.toggl && this.workspaceId) {
 			this.updateStatus(InstanceStatus.Ok)
 		}
@@ -89,10 +88,6 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	updateActions(): void {
 		UpdateActions(this)
 	}
-
-	/*updateFeedbacks() {
-		UpdateFeedbacks(this)
-	}*/
 
 	updatePresets(): void {
 		UpdatePresets(this)
@@ -123,7 +118,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	}
 
 	async getCurrentTimer(): Promise<number | null> {
-		console.log('function: getCurrentTimer')
+		this.log('debug', 'function: getCurrentTimer')
 
 		if (!this.toggl) {
 			this.log('warn', 'Not authorized')
@@ -154,7 +149,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	}
 
 	async getWorkspace(): Promise<void> {
-		console.log('function: getWorkspace')
+		this.log('debug', 'function: getWorkspace')
 		if (!this.toggl) {
 			this.log('warn', 'Not authorized')
 			return
@@ -182,9 +177,8 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		if (this.workspaceId == undefined) {
 			// no workspace found
-			//console.log('result ' + JSON.stringify(workspaces, null, 4))
+			this.log('debug', 'workspace not found. Response: ' + JSON.stringify(workspaces))
 			this.updateStatus(InstanceStatus.BadConfig, 'No workspace found')
-			this.log('debug', 'No workspace found')
 			return
 		}
 
@@ -193,11 +187,11 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			workspace: this.workspaceName,
 		})
 
-		return this.getProjects()
+		await this.getProjects()
 	}
 
 	async getProjects(): Promise<void> {
-		console.log('function: getProjects ' + this.workspaceId)
+		this.log('debug', 'function: getProjects ' + this.workspaceId)
 
 		if (!this.workspaceId) {
 			this.log('warn', 'workspaceId undefined')
@@ -209,9 +203,9 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		//const projects: IWorkspaceProject[] = await togglGetProjects(this.toggl!, this.workspaceId!)
 
 		if (typeof projects === 'string' || projects.length == 0) {
-			this.projects = [{ id: '0', label: 'None' }]
-			console.log(projects)
-			this.log('debug', 'No projects')
+			this.log('debug', 'No projects found')
+			this.projects = [{ id: 0, label: 'None' }]
+			this.log('debug', 'projects response' + JSON.stringify(projects))
 			return
 		}
 
@@ -219,7 +213,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			.filter((p) => p.active)
 			.map((p) => {
 				return {
-					id: p.id.toString(),
+					id: p.id,
 					label: p.name,
 				}
 			})
@@ -236,38 +230,8 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				return 0
 			})
 
-		console.log('Projects:')
-		console.log(this.projects)
+		this.log('debug', 'Projects: ' + JSON.stringify(this.projects))
 	}
-
-	// getTimerDuration(id) {
-	// 	let cmd = 'time_entries/' + id
-	//
-	// 	return new Promise((resolve, reject) => {
-	// 		self.sendCommand('rest_get', cmd).then(
-	// 			(result) => {
-	// 				if (typeof result === 'object' && result.data !== null && result.data !== undefined) {
-	// 					if ('duration' in result.data) {
-	// 						self.setVariable('timerDuration', result.data.duration)
-	// 						resolve(result.data.duration)
-	// 					} else {
-	// 						self.log('debug', 'Error getting current timer duration (no id in data)')
-	// 						self.setVariable('timerDuration', null)
-	// 						resolve(null)
-	// 					}
-	// 				} else {
-	// 					self.log('debug', 'Error getting current timer duration (no object)')
-	// 					self.setVariable('timerDuration', null)
-	// 					resolve(null)
-	// 				}
-	// 			},
-	// 			(error) => {
-	// 				console.log('error ' + error)
-	// 				self.log('debug', 'Error getting current timer duration')
-	// 			}
-	// 		)
-	// 	})
-	// }
 
 	async startTimer(project: number, description: string): Promise<void> {
 		if (!this.toggl || !this.workspaceId) {
@@ -307,7 +271,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		}
 		const currentId = await this.getCurrentTimer()
 		this.log('info', 'Trying to stop current timer id: ' + currentId)
-		// console.log(typeof timerId)
+
 		if (currentId !== null) {
 			const updated: ITimeEntry = await this.toggl.timeEntry.stop(currentId, this.workspaceId)
 			this.log('info', 'Stopped ' + updated.id + ', duration ' + updated.duration)
