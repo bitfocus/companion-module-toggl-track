@@ -1,5 +1,5 @@
 // toggltrack module
-// Peter Daniel
+// Peter Daniel, Matthias Kesler
 
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
@@ -10,6 +10,7 @@ import UpgradeScripts from './upgrades.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { Toggl, ITimeEntry, IWorkspaceProject } from 'toggl-track'
 import { togglGetWorkspaces } from './toggl-extend.js'
+import { timecodeSince } from './utils.js'
 
 export class TogglTrack extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
@@ -20,6 +21,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	workspaceName: string = '' // name of workspace
 	projects?: { id: number; label: string }[]
 	intervalId?: NodeJS.Timeout
+	currentTimerUpdaterIntervalId?: NodeJS.Timeout
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -34,6 +36,8 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		if (this.config.startTimerPoller) {
 			this.stopTimeEntryPoller()
 		}
+
+		clearInterval(this.currentTimerUpdaterIntervalId)
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
@@ -154,15 +158,42 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		clearInterval(this.intervalId)
 	}
 
-	private setCurrentProject(projectID: number | undefined): void {
-		let pName: string | undefined
-		if (typeof projectID === 'number') {
-			pName = this.projects!.find((v) => v.id == projectID)?.label
+	/**
+	 * Set variables to this time entry
+	 * @param entry running entry or undefined
+	 */
+	private setCurrentlyRunningTimeEntry(entry: ITimeEntry | undefined): void {
+		if (entry) {
+			this.setVariableValues({
+				timerId: entry.id,
+				timerDescription: entry.description,
+				timerDuration: timecodeSince(new Date(entry.start)),
+				timerProject: this.projects!.find((v) => v.id == entry?.project_id)?.label,
+				timerProjectID: entry.project_id,
+			})
+
+			// in case there is on update thread running clear it
+			clearInterval(this.currentTimerUpdaterIntervalId)
+
+			// Update timerDuration once per second
+			this.currentTimerUpdaterIntervalId = setInterval(() => {
+				// this harms the linter (handle unawaited promise in an non-async context)
+				void (async () => {
+					this.setVariableValues({
+						timerDuration: timecodeSince(new Date(entry.start)),
+					})
+				})()
+			}, 1000) // update every second
+		} else {
+			clearInterval(this.currentTimerUpdaterIntervalId)
+			this.setVariableValues({
+				timerId: undefined,
+				timerDescription: undefined,
+				timerDuration: undefined,
+				timerProject: undefined,
+				timerProjectID: undefined,
+			})
 		}
-		this.setVariableValues({
-			timerProject: pName,
-			timerProjectID: projectID,
-		})
 		this.checkFeedbacks('ProjectRunningState')
 	}
 
@@ -179,22 +210,12 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		if (entry) {
 			this.log('info', 'Current timer id: ' + entry.id)
-			this.setVariableValues({
-				timerId: entry.id,
-				timerDescription: entry.description,
-				timerDuration: entry.duration,
-			})
-			this.setCurrentProject(entry.project_id)
+			this.setCurrentlyRunningTimeEntry(entry)
 
 			return entry.id
 		} else {
 			this.log('info', 'No current timer')
-			this.setVariableValues({
-				timerId: undefined,
-				timerDescription: undefined,
-				timerDuration: undefined,
-			})
-			this.setCurrentProject(undefined)
+			this.setCurrentlyRunningTimeEntry(undefined)
 			return null
 		}
 	}
@@ -303,12 +324,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				project_id: project != 0 ? project : undefined,
 			})
 			this.log('info', 'New timer started ' + newEntry.id + ' ' + newEntry.description)
-			this.setVariableValues({
-				timerId: newEntry.id,
-				timerDescription: newEntry.description,
-				timerDuration: newEntry.duration,
-			})
-			this.setCurrentProject(newEntry.project_id)
+			this.setCurrentlyRunningTimeEntry(newEntry)
 		} else {
 			this.log('info', 'A timer is already running ' + currentId + ' not starting a new one!')
 		}
@@ -328,13 +344,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			const updated: ITimeEntry = await this.toggl.timeEntry.stop(currentId, this.workspaceId)
 			this.log('info', 'Stopped ' + updated.id + ', duration ' + updated.duration)
 
+			this.setCurrentlyRunningTimeEntry(undefined)
 			this.setVariableValues({
-				timerId: undefined,
-				timerDescription: undefined,
-				timerDuration: undefined,
 				lastTimerDuration: updated.duration,
 			})
-			this.setCurrentProject(undefined)
 		} else {
 			this.log('warn', 'No running timer to stop or running timer id unknown')
 		}
