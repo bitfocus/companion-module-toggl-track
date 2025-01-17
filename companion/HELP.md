@@ -18,7 +18,7 @@ Start a new timer running with the description set in the action and store the I
 
 **Get Current Timer**
 
-Companion only knows the ID of timers it has started, if a timer is started from another application or the toggle website then this action will get the ID so Companion knows about it.
+Companion only knows the ID of timers it has started. If you did not enable time entry poller you can use this action to poll the current time entry, if a timer is started from another application or the toggle website so Companion knows about it.
 
 **Stop Current Timer**
 
@@ -36,32 +36,37 @@ Presets are available for **Start Timer** and **Stop Timer**.
 
 ### Version 1.0.0
 
-First release
+- First release
 
 ### Version 1.0.1
 
-Fix broken link
+- Fix broken link
 
 ### Version 1.0.2
 
-Allow a project to be specified when starting a new timer button
-
-Add an action to refresh the project list
-
-Add 'Always start' configuration option
+- Allow a project to be specified when starting a new timer button
+- Add an action to refresh the project list
+- Add 'Always start' configuration option
 
 ### Version 1.0.3
 
-Add variables for timerId and timerDescription
+- Add variables for timerId and timerDescription
 
 ### Version 2.0.0
 
-Updated for Companion version 3
-
-Updated for toggl API version 9
+- Updated for Companion version 3
+- Updated for toggl API version 9
 
 ### Version 2.0.1
 
-Make the API token config field required
+- Make the API token config field required
+- Fix manifest file
 
-Fix manifest file
+### Version 2.1.0
+
+- rewrite module in typescript
+- use module toggl-track instead of implementing api on our own
+- add status reports for some failure cases in connections dashboard
+- add configurable time entry poller
+- add feedback for currently running project
+- update timerDuration to contain the correct duration formatted as time string
