@@ -8,7 +8,7 @@ import UpdatePresets from './presets.js'
 import UpdateVariableDefinitions from './variables.js'
 import UpgradeScripts from './upgrades.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { Toggl, ITimeEntry, IWorkspaceProject } from 'toggl-track'
+import { Toggl, ITimeEntry, IWorkspaceProject, IClient } from 'toggl-track'
 import { togglGetWorkspaces } from './toggl-extend.js'
 import { timecodeSince } from './utils.js'
 
@@ -19,7 +19,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 	workspaceId?: number // current active workspace id
 	workspaceName: string = '' // name of workspace
-	projects?: { id: number; label: string }[]
+	projects?: { id: number; label: string; clientID?: number }[]
+	clients?: { id: number; label: string }[]
+	currentEntry?: ITimeEntry
+
 	intervalId?: NodeJS.Timeout
 	currentTimerUpdaterIntervalId?: NodeJS.Timeout
 
@@ -163,13 +166,17 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	 * @param entry running entry or undefined
 	 */
 	private setCurrentlyRunningTimeEntry(entry: ITimeEntry | undefined): void {
+		this.currentEntry = entry
 		if (entry) {
+			const project = this.projects?.find((p) => p.id == entry.project_id)
 			this.setVariableValues({
 				timerId: entry.id,
 				timerDescription: entry.description,
 				timerDuration: timecodeSince(new Date(entry.start)),
-				timerProject: this.projects!.find((v) => v.id == entry?.project_id)?.label,
+				timerProject: project?.label,
 				timerProjectID: entry.project_id,
+				timerClient: this.clients!.find((c) => c.id == project?.clientID)?.label,
+				timerClientID: project?.clientID,
 			})
 
 			// in case there is on update thread running clear it
@@ -192,9 +199,11 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDuration: undefined,
 				timerProject: undefined,
 				timerProjectID: undefined,
+				timerClient: undefined,
+				timerClientID: undefined,
 			})
 		}
-		this.checkFeedbacks('ProjectRunningState')
+		this.checkFeedbacks('ProjectRunningState', 'ClientRunningState')
 	}
 
 	async getCurrentTimer(): Promise<number | null> {
@@ -260,6 +269,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		})
 
 		await this.getProjects()
+		await this.getClients()
 	}
 
 	async getProjects(): Promise<void> {
@@ -287,6 +297,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				return {
 					id: p.id,
 					label: p.name,
+					clientID: p.client_id,
 				}
 			})
 			.sort((a, b) => {
@@ -303,6 +314,47 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			})
 
 		this.log('debug', 'Projects: ' + JSON.stringify(this.projects))
+	}
+
+	private async getClients(): Promise<void> {
+		this.log('debug', 'function: getClients ' + this.workspaceId)
+
+		if (!this.workspaceId) {
+			this.log('warn', 'workspaceId undefined')
+			return
+		}
+
+		const clients: IClient[] = await this.toggl!.me.clients()
+
+		if (typeof clients === 'string' || clients.length == 0) {
+			this.log('debug', 'No clients found')
+			this.clients = undefined
+			this.log('debug', 'clients response' + JSON.stringify(clients))
+			return
+		}
+
+		this.clients = clients
+			.filter((c) => c.wid == this.workspaceId)
+			.map((c) => {
+				return {
+					id: c.id,
+					label: c.name,
+				}
+			})
+			.sort((a, b) => {
+				const fa = a.label.toLowerCase()
+				const fb = b.label.toLowerCase()
+
+				if (fa < fb) {
+					return -1
+				}
+				if (fa > fb) {
+					return 1
+				}
+				return 0
+			})
+
+		this.log('debug', 'Clients: ' + JSON.stringify(this.clients))
 	}
 
 	async startTimer(project: number, description: string): Promise<void> {
