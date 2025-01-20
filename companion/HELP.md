@@ -68,5 +68,5 @@ Presets are available for **Start Timer** and **Stop Timer**.
 - use module toggl-track instead of implementing api on our own
 - add status reports for some failure cases in connections dashboard
 - add configurable time entry poller
-- add feedback for currently running project
+- add feedback for currently running project and client
 - update timerDuration to contain the correct duration formatted as time string

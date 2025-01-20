@@ -16,7 +16,7 @@ export default function (self: TogglTrack): void {
 					label: 'Project',
 					id: 'project',
 					default: '0',
-					choices: self.projects!,
+					choices: self.projects ?? [{ id: -1, label: 'None' }],
 				},
 			],
 			callback: async ({ options }) => {
@@ -44,7 +44,15 @@ export default function (self: TogglTrack): void {
 			name: 'Refresh Project List',
 			options: [],
 			callback: async () => {
-				await self.getWorkspace()
+				await self.getProjects()
+			},
+		},
+
+		refreshStaticData: {
+			name: 'Refresh Workspace, Project and Client List',
+			options: [],
+			callback: async () => {
+				await self.loadStaticData()
 			},
 		},
 	})

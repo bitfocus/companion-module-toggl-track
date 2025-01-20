@@ -48,20 +48,12 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		this.config = config
 
-		this.projects = [{ id: 0, label: 'None' }]
-
 		this.updateVariableDefinitions()
 		this.updatePresets()
 
-		this.setVariableValues({
-			timerId: undefined,
-			timerDuration: undefined,
-			timerDescription: undefined,
-			lastTimerDuration: undefined,
-			workspace: undefined,
-		})
-
 		await this.initToggleConnection()
+
+		await this.loadStaticData()
 
 		this.updateActions()
 		this.updateFeedbacks()
@@ -70,6 +62,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.updateStatus(InstanceStatus.Ok)
 		}
 
+		await this.getCurrentTimer()
 		if (this.config.startTimerPoller) {
 			this.startTimeEntryPoller()
 		}
@@ -88,9 +81,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.log('debug', 'api token changed. init new toggle connection')
 			this.toggl = undefined
 			await this.initToggleConnection()
+			await this.loadStaticData()
 		} else if (workSpaceDefaultChanged) {
 			this.log('debug', 'workspace default changed. reload workspaces')
-			await this.getWorkspace()
+			await this.loadStaticData()
 		}
 
 		if (timeEntryPollerChanged) {
@@ -141,8 +135,6 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				this.updateStatus(InstanceStatus.AuthenticationFailure, resp)
 				return
 			}
-			await this.getWorkspace()
-			await this.getCurrentTimer()
 		}
 	}
 
@@ -229,7 +221,17 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		}
 	}
 
-	async getWorkspace(): Promise<void> {
+	async loadStaticData(): Promise<void> {
+		if (!this.toggl) {
+			this.log('warn', 'loadStaticData: toggle connection not set up')
+			return
+		}
+		await this.getWorkspace()
+		await this.getProjects()
+		await this.getClients()
+	}
+
+	private async getWorkspace(): Promise<void> {
 		this.log('debug', 'function: getWorkspace')
 		if (!this.toggl) {
 			this.log('warn', 'Not authorized')
@@ -282,11 +284,9 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		const projects: IWorkspaceProject[] = await this.toggl!.projects.list(this.workspaceId)
 
-		//const projects: IWorkspaceProject[] = await togglGetProjects(this.toggl!, this.workspaceId!)
-
 		if (typeof projects === 'string' || projects.length == 0) {
 			this.log('debug', 'No projects found')
-			this.projects = [{ id: 0, label: 'None' }]
+			this.projects = undefined
 			this.log('debug', 'projects response' + JSON.stringify(projects))
 			return
 		}
