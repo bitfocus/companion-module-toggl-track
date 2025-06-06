@@ -146,7 +146,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			void (async () => {
 				await this.getCurrentTimer()
 			})()
-		}, 30 * 1000)
+		}, this.config.timerPollerInterval * 1000)
 	}
 	private stopTimeEntryPoller(): void {
 		this.log('info', 'Stopping TimeEntry-Poller')
