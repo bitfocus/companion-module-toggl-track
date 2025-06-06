@@ -5,6 +5,7 @@ export interface ModuleConfig {
 	workspaceName: string
 	alwaysStart: boolean
 	startTimerPoller: boolean
+	timerPollerInterval: number
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -36,9 +37,18 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 		{
 			type: 'checkbox',
 			id: 'startTimerPoller',
-			label: 'Poll for current time entry every 30 seconds',
+			label: 'Poll for current time entry every n seconds',
 			width: 12,
 			default: false,
+		},
+		{
+			type: 'number',
+			id: 'timerPollerInterval',
+			label: 'Poll interval in seconds',
+			width: 12,
+			default: 60,
+			min: 30,
+			max: 3600,
 		},
 	]
 }
