@@ -167,7 +167,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				timerDuration: timecodeSince(new Date(entry.start)),
 				timerProject: project?.label,
 				timerProjectID: entry.project_id,
-				timerClient: this.clients!.find((c) => c.id == project?.clientID)?.label,
+				timerClient: this.clients?.find((c) => c.id == project?.clientID)?.label ?? "None",
 				timerClientID: project?.clientID,
 			})
 
