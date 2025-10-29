@@ -8,7 +8,7 @@ import UpdatePresets from './presets.js'
 import UpdateVariableDefinitions from './variables.js'
 import UpgradeScripts from './upgrades.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { Toggl, ITimeEntry, IWorkspaceProject, IClient } from 'toggl-track'
+import { Toggl, ITimeEntry, IWorkspaceProject, IClient, isRatelimitError } from 'toggl-track'
 import { togglGetWorkspaces } from './toggl-extend.js'
 import { timecodeSince } from './utils.js'
 
@@ -23,8 +23,8 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 	clients?: { id: number; label: string }[]
 	currentEntry?: ITimeEntry
 
-	intervalId?: NodeJS.Timeout
-	currentTimerUpdaterIntervalId?: NodeJS.Timeout
+	intervalId?: NodeJS.Timeout // used for time entry poller and to postpone init on ratelimit
+	currentTimerUpdaterIntervalId?: NodeJS.Timeout // used to update the timer duration variable every second
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -52,6 +52,14 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		this.updatePresets()
 
 		await this.initToggleConnection()
+		if (this.toggl && this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Retry init in ' + this.toggl.getRateLimitedUntil() + ' seconds')
+			this.intervalId = setTimeout(() => {
+				void this.init(this.config)
+			}, this.toggl.getRateLimitedUntil() * 1000)
+			// skip further init until ratelimit is over
+			return
+		}
 
 		await this.loadStaticData()
 
@@ -75,6 +83,7 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		const workSpaceDefaultChanged: boolean = this.config.workspaceName != config.workspaceName
 		const timeEntryPollerChanged: boolean = this.config.startTimerPoller != config.startTimerPoller
 
+		const oldConfig = this.config
 		this.config = config
 
 		if (apiTokenChanged) {
@@ -85,6 +94,19 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		} else if (workSpaceDefaultChanged) {
 			this.log('debug', 'workspace default changed. reload workspaces')
 			await this.loadStaticData()
+		}
+
+		if (this.toggl && this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Retry init in ' + this.toggl.getRateLimitedUntil() + ' seconds')
+			this.config = oldConfig // revert to old config until ratelimit is over
+			this.intervalId = setTimeout(() => {
+				// this harms the linter (handle unawaited promise in an non-async context)
+				void (async () => {
+					await this.configUpdated(config)
+				})()
+			}, this.toggl.getRateLimitedUntil() * 1000)
+			// skip further init until ratelimit is over
+			return
 		}
 
 		if (timeEntryPollerChanged) {
@@ -128,11 +150,23 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 				},
 			})
 
-			const resp = await this.toggl.me.logged()
-			if (resp !== '') {
-				this.log('warn', 'error during token check: ' + resp)
+			try {
+				const resp = await this.toggl.me.logged()
+				if (resp !== '') {
+					this.log('warn', 'error during token check: ' + resp)
+					this.toggl = undefined
+					this.updateStatus(InstanceStatus.AuthenticationFailure, resp as string)
+					return
+				}
+			} catch (e: unknown) {
+				this.log('warn', 'error during token check: ' + (e as Error).message)
+				if (isRatelimitError(e)) {
+					this.log('warn', 'ratelimited. Will reset in' + e.resetAfterSeconds)
+					this.updateStatus(InstanceStatus.ConnectionFailure, `Ratelimited. Retry after ${e.resetAfterSeconds} seconds`)
+					return
+				}
 				this.toggl = undefined
-				this.updateStatus(InstanceStatus.AuthenticationFailure, resp)
+				this.updateStatus(InstanceStatus.AuthenticationFailure, (e as Error).message)
 				return
 			}
 		}
@@ -205,6 +239,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.log('warn', 'Not authorized')
 			return null
 		}
+		if (this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Skipping get current timer')
+			return null
+		}
 
 		const entry: ITimeEntry = await this.toggl.timeEntry.current()
 		this.log('debug', 'response for timer id ' + JSON.stringify(entry))
@@ -226,6 +264,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.log('warn', 'loadStaticData: toggle connection not set up')
 			return
 		}
+		if (this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Skipping get current timer')
+			return
+		}
 		await this.getWorkspace()
 		await this.getProjects()
 		await this.getClients()
@@ -235,6 +277,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		this.log('debug', 'function: getWorkspace')
 		if (!this.toggl) {
 			this.log('warn', 'Not authorized')
+			return
+		}
+		if (this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Skipping get current timer')
 			return
 		}
 
@@ -362,6 +408,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 			this.log('error', 'toggle not initialized. Do not start time')
 			return
 		}
+		if (this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Skipping get current timer')
+			return
+		}
 
 		const currentId = await this.getCurrentTimer()
 		let newEntry: ITimeEntry
@@ -387,6 +437,10 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 
 		if (!this.toggl || !this.workspaceId) {
 			this.log('error', 'toggle not initialized. Do not start time')
+			return
+		}
+		if (this.toggl.getRateLimitedUntil() > 0) {
+			this.log('warn', 'Ratelimited. Skipping get current timer')
 			return
 		}
 		const currentId = await this.getCurrentTimer()
