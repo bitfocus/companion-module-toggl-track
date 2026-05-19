@@ -1,17 +1,18 @@
-import { combineRgb } from '@companion-module/base'
-import { TogglTrack } from './main.js'
+import type { ModuleSchema } from './main.js'
+import type TogglTrack from './main.js'
+import type { CompanionPresetDefinitions, CompanionPresetSection } from '@companion-module/base'
 
-export default function (self: TogglTrack): void {
-	self.setPresetDefinitions({
+export function UpdatePresets(self: TogglTrack): void {
+	const structure: CompanionPresetSection[] = []
+	const presets: CompanionPresetDefinitions<ModuleSchema> = {
 		Start: {
-			type: 'button',
-			category: 'Timer',
 			name: 'Start',
+			type: 'simple',
 			style: {
 				text: 'Start Timer',
 				size: '18',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
+				color: 0xffffff,
+				bgcolor: 0x000000,
 			},
 			steps: [
 				{
@@ -20,7 +21,7 @@ export default function (self: TogglTrack): void {
 							actionId: 'startNewTimer',
 							options: {
 								description: '',
-								project: '0',
+								project: 0,
 							},
 						},
 					],
@@ -29,16 +30,14 @@ export default function (self: TogglTrack): void {
 			],
 			feedbacks: [],
 		},
-
 		Stop: {
-			type: 'button',
-			category: 'Timer',
 			name: 'Stop',
+			type: 'simple',
 			style: {
 				text: 'Stop Timer',
 				size: '18',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
+				color: 0xffffff,
+				bgcolor: 0x000000,
 			},
 			steps: [
 				{
@@ -53,5 +52,7 @@ export default function (self: TogglTrack): void {
 			],
 			feedbacks: [],
 		},
-	})
+	}
+
+	self.setPresetDefinitions(structure, presets)
 }

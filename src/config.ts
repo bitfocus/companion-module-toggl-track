@@ -1,6 +1,6 @@
 import { type SomeCompanionConfigField } from '@companion-module/base'
 
-export interface ModuleConfig {
+export type ModuleConfig = {
 	apiToken?: string
 	workspaceName: string
 	alwaysStart: boolean
@@ -9,14 +9,13 @@ export interface ModuleConfig {
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
-	// console.log('config fields')
 	return [
 		{
 			type: 'textinput',
 			id: 'apiToken',
 			label: 'Personal API Token from your Toggl user profile (required)',
 			width: 12,
-			required: true,
+			minLength: 10,
 			default: '',
 		},
 		{
@@ -24,7 +23,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'workspaceName',
 			label: 'Workspace to default to (first found if unset)',
 			width: 12,
-			required: false,
 			default: '',
 		},
 		{

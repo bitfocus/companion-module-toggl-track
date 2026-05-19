@@ -1,18 +1,29 @@
 // toggltrack module
 // Peter Daniel, Matthias Kesler
 
-import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import UpdateActions from './actions.js'
-import UpdatePresets from './presets.js'
-import UpdateVariableDefinitions from './variables.js'
-import UpgradeScripts from './upgrades.js'
-import { UpdateFeedbacks } from './feedbacks.js'
-import { Toggl, ITimeEntry, IWorkspaceProject, IClient, isRatelimitError } from 'toggl-track'
+import { UpdateVariableDefinitions, type VariablesSchema } from './variables.js'
+import { UpgradeScripts } from './upgrades.js'
+import { UpdateActions, type ActionsSchema } from './actions.js'
+import { UpdateFeedbacks, type FeedbacksSchema } from './feedbacks.js'
+import { UpdatePresets } from './presets.js'
+import { Toggl, isRatelimitError } from 'toggl-track'
+import type { ITimeEntry, IWorkspaceProject, IClient } from 'toggl-track'
 import { togglGetWorkspaces } from './toggl-extend.js'
 import { timecodeSince } from './utils.js'
 
-export class TogglTrack extends InstanceBase<ModuleConfig> {
+export type ModuleSchema = {
+	config: ModuleConfig
+	secrets: undefined
+	actions: ActionsSchema
+	feedbacks: FeedbacksSchema
+	variables: VariablesSchema
+}
+
+export { UpgradeScripts }
+
+export default class TogglTrack extends InstanceBase<ModuleSchema> {
 	config!: ModuleConfig // Setup in init()
 
 	toggl?: Toggl
@@ -459,5 +470,3 @@ export class TogglTrack extends InstanceBase<ModuleConfig> {
 		}
 	}
 }
-
-runEntrypoint(TogglTrack, UpgradeScripts)

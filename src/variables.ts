@@ -1,42 +1,44 @@
-import { TogglTrack } from './main.js'
+import type TogglTrack from './main.js'
 
-export default function (self: TogglTrack): void {
-	self.setVariableDefinitions([
-		{
+export type VariablesSchema = {
+	workspace: string
+	timerId: number
+	timerDuration: string
+	lastTimerDuration: number
+	timerDescription: string
+	timerProjectID: number
+	timerProject: string
+	timerClientID: number
+	timerClient: string
+}
+export function UpdateVariableDefinitions(self: TogglTrack): void {
+	self.setVariableDefinitions({
+		workspace: {
 			name: 'Workspace',
-			variableId: 'workspace',
 		},
-		{
+		timerId: {
 			name: 'Current Timer Id',
-			variableId: 'timerId',
 		},
-		{
+		timerDuration: {
 			name: 'Current Timer Duration',
-			variableId: 'timerDuration',
 		},
-		{
+		lastTimerDuration: {
 			name: 'Last Timer Duration',
-			variableId: 'lastTimerDuration',
 		},
-		{
+		timerDescription: {
 			name: 'Current Timer Description',
-			variableId: 'timerDescription',
 		},
-		{
+		timerProjectID: {
 			name: 'Current Timer Project ID',
-			variableId: 'timerProjectID',
 		},
-		{
+		timerProject: {
 			name: 'Current Timer Project',
-			variableId: 'timerProject',
 		},
-		{
+		timerClientID: {
 			name: 'Current Timer Client ID',
-			variableId: 'timerClientID',
 		},
-		{
+		timerClient: {
 			name: 'Current Timer Client',
-			variableId: 'timerClient',
 		},
-	])
+	})
 }

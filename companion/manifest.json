@@ -1,4 +1,6 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"type": "connection",
 	"id": "toggl-track",
 	"name": "toggl-track",
 	"shortname": "toggl-track",
@@ -15,13 +17,13 @@
 			"name": "Matthias Kesler"
 		}
 	],
-	"legacyIds": [],
 	"runtime": {
 		"type": "node22",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
 		"entrypoint": "../dist/main.js"
 	},
+	"legacyIds": [],
 	"manufacturer": "Toggl",
 	"products": ["Track"],
 	"keywords": ["Logging", "Timer", "Task Tracking", "Time Tracking", "Project Management"]

@@ -1,5 +1,20 @@
-import { combineRgb } from '@companion-module/base'
-import type { TogglTrack } from './main.js'
+import type TogglTrack from './main.js'
+
+export type FeedbacksSchema = {
+	ProjectRunningState: {
+		type: 'boolean'
+		options: {
+			project: number
+		}
+	}
+	ClientRunningState: {
+		name: 'Client Counting'
+		type: 'boolean'
+		options: {
+			client: number
+		}
+	}
+}
 
 export function UpdateFeedbacks(self: TogglTrack): void {
 	self.setFeedbackDefinitions({
@@ -7,8 +22,8 @@ export function UpdateFeedbacks(self: TogglTrack): void {
 			name: 'Project Counting',
 			type: 'boolean',
 			defaultStyle: {
-				bgcolor: combineRgb(255, 0, 0),
-				color: combineRgb(0, 0, 0),
+				bgcolor: 0xff0000,
+				color: 0x000000,
 			},
 			options: [
 				{
@@ -19,17 +34,17 @@ export function UpdateFeedbacks(self: TogglTrack): void {
 					choices: self.projects ?? [{ id: -1, label: 'None' }],
 				},
 			],
-			callback: (feedback) => {
+			callback: ({ options }) => {
 				//self.log('debug', 'check project counting ' + feedback.options.project)
-				return feedback.options.project == self.currentEntry?.project_id
+				return options.project == self.currentEntry?.project_id
 			},
 		},
 		ClientRunningState: {
 			name: 'Client Counting',
 			type: 'boolean',
 			defaultStyle: {
-				bgcolor: combineRgb(255, 0, 0),
-				color: combineRgb(0, 0, 0),
+				bgcolor: 0xff0000,
+				color: 0x000000,
 			},
 			options: [
 				{
@@ -40,10 +55,10 @@ export function UpdateFeedbacks(self: TogglTrack): void {
 					choices: self.clients ?? [{ id: -1, label: 'None' }],
 				},
 			],
-			callback: (feedback) => {
-				//self.log('debug', 'check client counting ' + feedback.options.client)
+			callback: ({ options }) => {
+				//self.log('debug', 'check client counting ' + options.client)
 				// find the project that matches the project_id of the current entry and compare its client_id with the configured one
-				return feedback.options.client == self.projects?.find((p) => p.id == self.currentEntry?.project_id)?.clientID
+				return options.client == self.projects?.find((p) => p.id == self.currentEntry?.project_id)?.clientID
 			},
 		},
 	})

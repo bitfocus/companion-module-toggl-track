@@ -1,26 +1,47 @@
-import { TogglTrack } from './main.js'
+import type TogglTrack from './main.js'
 
-export default function (self: TogglTrack): void {
+export type ActionsSchema = {
+	startNewTimer: {
+		options: {
+			description: string
+			project: number
+		}
+	}
+	getCurrentTimer: {
+		options: Record<string, never>
+	}
+	stopCurrentTimer: {
+		options: Record<string, never>
+	}
+	refreshProjects: {
+		options: Record<string, never>
+	}
+	refreshStaticData: {
+		options: Record<string, never>
+	}
+}
+
+export function UpdateActions(self: TogglTrack): void {
 	self.setActionDefinitions({
 		startNewTimer: {
 			name: 'Start New Timer',
 			options: [
 				{
+					id: 'description',
 					type: 'textinput',
 					label: 'Description',
-					id: 'description',
 					default: '',
 				},
 				{
+					id: 'project',
 					type: 'dropdown',
 					label: 'Project',
-					id: 'project',
 					default: '0',
 					choices: self.projects ?? [{ id: -1, label: 'None' }],
 				},
 			],
 			callback: async ({ options }) => {
-				return self.startTimer(Number(options.project), options.description as string)
+				return self.startTimer(options.project, options.description)
 			},
 		},
 

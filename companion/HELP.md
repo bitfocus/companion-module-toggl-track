@@ -84,3 +84,7 @@ Presets are available for **Start Timer** and **Stop Timer**.
 
 - update dependencies (fix CVE-2025-58754)
 - handle rate limiting of toggl
+
+### Version 2.2.0
+
+- update to companion api 2.0
