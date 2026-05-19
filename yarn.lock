@@ -1863,10 +1863,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"toggl-track@https://github.com/krombel/toggl-track#v0.8.0-2":
-  version: 0.8.0-2
-  resolution: "toggl-track@https://github.com/krombel/toggl-track.git#commit=ff472c07c88a68f7eaba1dd29100a54a93c64329"
-  checksum: 10c0/72f1c6ccf94339dc3a6deeeb4e9fbe94d52f270518ca7f3064b0f9c05144b7724d467122f95839933d77d0dbf403c202e117723d47eff10a7d575a586bb359da
+"toggl-track@https://github.com/krombel/toggl-track/releases/download/v0.8.1/toggl-track-0.8.1.tgz":
+  version: 0.8.1
+  resolution: "toggl-track@https://github.com/krombel/toggl-track/releases/download/v0.8.1/toggl-track-0.8.1.tgz"
+  checksum: 10c0/9b39dcf526691a74e4fa27e1cf5dc7931baac0c5356e9923ad2b154bdff6c64215915f9e545d1a109ff5bd39a5ee8dac67c843148185cc5f0412dc68c321ae8b
   languageName: node
   linkType: hard
 
@@ -1883,7 +1883,7 @@ __metadata:
     lint-staged: "npm:^16.4.0"
     prettier: "npm:^3.8.3"
     rimraf: "npm:^6.1.3"
-    toggl-track: "https://github.com/krombel/toggl-track#v0.8.0-2"
+    toggl-track: "https://github.com/krombel/toggl-track/releases/download/v0.8.1/toggl-track-0.8.1.tgz"
     typescript: "npm:~6.0.3"
     typescript-eslint: "npm:^8.59.0"
   languageName: unknown

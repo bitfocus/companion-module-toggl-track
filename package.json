@@ -24,7 +24,7 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "2.0.4",
-		"toggl-track": "https://github.com/krombel/toggl-track#v0.8.0-2"
+		"toggl-track": "https://github.com/krombel/toggl-track/releases/download/v0.8.1/toggl-track-0.8.1.tgz"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^3.0.1",
