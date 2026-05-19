@@ -24,7 +24,6 @@ jobs:
       - name: Prepare Environment
         run: |
           corepack enable
-      - name: Prepare Environment (For template repository)
 
       - name: Prepare module
         run: |
@@ -32,9 +31,12 @@ jobs:
         env:
           CI: true
 
-      # Runs a set of commands using the runners shell
       - name: Prettier Action
         uses: creyD/prettier_action@8c18391fdc98ed0d884c6345f03975edac71b8f0 # v4.6
+        with:
+          prettier_options: --check src/**/*.ts
+          no_commit: true
+          clean_node_folder: false
 
       - name: Build and check types
         run: |
