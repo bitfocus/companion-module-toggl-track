@@ -1859,7 +1859,7 @@ __metadata:
 "toggl-track@https://github.com/krombel/toggl-track/releases/download/v0.9.1-1/toggl-track-0.9.1-1.tgz":
   version: 0.9.1-1
   resolution: "toggl-track@https://github.com/krombel/toggl-track/releases/download/v0.9.1-1/toggl-track-0.9.1-1.tgz"
-  checksum: 10c0/1c5d4be19aafce25ffa3625426dfacfe74fe19664d92b9c059e10906a8b33873b553413a0f19144fe6d9cba6bb3aa81d5f0818ef1f894a84b85d02865f1b9806
+  checksum: 10c0/772eb10dd0e24b425658a3d25b8a27ef00762304c872bac0dbd22ced94a38b133c835d955534e1e1ade6efc67c170a840754e7d641212eae343da1763cb50f63
   languageName: node
   linkType: hard
 
