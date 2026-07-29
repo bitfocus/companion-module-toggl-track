@@ -27,7 +27,7 @@
 		"toggl-track": "https://github.com/krombel/toggl-track/releases/download/v0.9.1-1/toggl-track-0.9.1-1.tgz"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^3.0.1",
+		"@companion-module/tools": "^3.0.2",
 		"@types/node": "^22.19.17",
 		"@types/ws": "^8",
 		"eslint": "^9.39.4",
